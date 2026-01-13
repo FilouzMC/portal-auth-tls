@@ -17,8 +17,8 @@ NEW_VERSION="$1"
 
 # 🔧 À ADAPTER AVEC TON REPO :
 # User, repo, branche
-GITHUB_USER="TON_USER"
-GITHUB_REPO="TON_REPO"
+GITHUB_USER="FilouzMC"
+GITHUB_REPO="portal-auth-tls"
 GITHUB_BRANCH="main"
 
 # URL de l'archive tar.gz du repo
