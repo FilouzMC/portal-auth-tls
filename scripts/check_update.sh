@@ -1,15 +1,13 @@
 #!/bin/sh
 #
 # check_update.sh
-# Vérifie s'il existe une nouvelle version sur le repo
-# et télécharge / exécute update.sh si c'est le cas.
+# Compare la version locale avec celle du dépôt et lance install.sh en cas d'écart.
 #
 
 LOCAL_VERSION_FILE="/etc/portal_auth_version"
-
-# 🔧 À ADAPTER : URL de ta version distante et de ton update.sh
 REMOTE_VERSION_URL="https://raw.githubusercontent.com/FilouzMC/portal-auth-tls/main/version.txt"
-REMOTE_UPDATE_URL="https://raw.githubusercontent.com/FilouzMC/portal-auth-tls/main/update.sh"
+REMOTE_INSTALL_URL="https://raw.githubusercontent.com/FilouzMC/portal-auth-tls/main/install.sh"
+TMP_INSTALLER="/tmp/portal_auth_install.sh"
 
 log() {
     local MSG="$1"
@@ -17,39 +15,40 @@ log() {
     logger -t "PORTAL_UPDATE" "$MSG" 2>/dev/null || true
 }
 
-# Version locale : "0" si non définie
-LOCAL_VERSION="0"
-if [ -f "$LOCAL_VERSION_FILE" ]; then
-    LOCAL_VERSION="$(cat "$LOCAL_VERSION_FILE" 2>/dev/null | tr -d '\r\n')"
-fi
+read_local_version() {
+    if [ -f "$LOCAL_VERSION_FILE" ]; then
+        cat "$LOCAL_VERSION_FILE" 2>/dev/null | tr -d '\r\n'
+    else
+        echo "0"
+    fi
+}
 
-# Récupération de la version distante
+LOCAL_VERSION="$(read_local_version)"
 REMOTE_VERSION="$(curl -fsS "$REMOTE_VERSION_URL" 2>/dev/null | tr -d '\r\n')"
 
 if [ -z "$REMOTE_VERSION" ]; then
-    log "Impossible de récupérer la version distante (URL: $REMOTE_VERSION_URL)."
-    exit 0
-fi
-
-if [ "$REMOTE_VERSION" = "$LOCAL_VERSION" ]; then
-    log "Aucune mise à jour disponible (locale: $LOCAL_VERSION, distante: $REMOTE_VERSION)."
-    exit 0
-fi
-
-log "Nouvelle version détectée (locale: $LOCAL_VERSION, distante: $REMOTE_VERSION)."
-
-TMP_UPDATE="/tmp/portal_auth_update.sh"
-
-if ! curl -fsS "$REMOTE_UPDATE_URL" -o "$TMP_UPDATE"; then
-    log "Échec du téléchargement de update.sh (URL: $REMOTE_UPDATE_URL)."
+    log "Impossible de récupérer la version distante ($REMOTE_VERSION_URL)."
     exit 1
 fi
 
-chmod +x "$TMP_UPDATE"
+if [ "$REMOTE_VERSION" = "$LOCAL_VERSION" ]; then
+    log "Aucune mise à jour : version locale = $LOCAL_VERSION."
+    exit 0
+fi
 
-# Exécution du script d'update en root avec la nouvelle version en argument
-sh "$TMP_UPDATE" "$REMOTE_VERSION"
+log "Nouvelle version détectée (locale: $LOCAL_VERSION, distante: $REMOTE_VERSION). Téléchargement de install.sh..."
+
+if ! curl -fsS "$REMOTE_INSTALL_URL" -o "$TMP_INSTALLER"; then
+    log "Échec du téléchargement de install.sh ($REMOTE_INSTALL_URL)."
+    exit 1
+fi
+
+chmod +x "$TMP_INSTALLER"
+
+sh "$TMP_INSTALLER" "$REMOTE_VERSION"
 RET="$?"
+
+rm -f "$TMP_INSTALLER"
 
 if [ "$RET" -eq 0 ]; then
     log "Mise à jour vers la version $REMOTE_VERSION effectuée avec succès."
