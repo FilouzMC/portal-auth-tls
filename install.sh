@@ -14,7 +14,7 @@ NEW_VERSION="$1"
 # ========================================
 GITHUB_USER="FilouzMC"
 GITHUB_REPO="portal-auth-tls"
-GITHUB_BRANCH="speed-project-with-updater"
+GITHUB_BRANCH="main"
 ARCHIVE_URL="https://github.com/$GITHUB_USER/$GITHUB_REPO/archive/refs/heads/$GITHUB_BRANCH.tar.gz"
 
 # ========================================
@@ -43,6 +43,36 @@ cleanup() {
 }
 
 trap cleanup EXIT
+
+# ========================================
+# ÉTAPE 0 : ASSISTANT DE CONFIGURATION
+# ========================================
+# Si la config existe déjà, on skip l'assistant (mise à jour)
+if [ ! -f "$CONFIG_FILE" ]; then
+    # Télécharger et exécuter l'assistant de configuration
+    WIZARD_URL="https://raw.githubusercontent.com/$GITHUB_USER/$GITHUB_REPO/$GITHUB_BRANCH/setup_wizard.sh"
+    WIZARD_FILE="/tmp/setup_wizard.sh"
+    
+    log "Téléchargement de l'assistant de configuration..."
+    if curl -fsSL "$WIZARD_URL" -o "$WIZARD_FILE" 2>/dev/null || wget -q -O "$WIZARD_FILE" "$WIZARD_URL" 2>/dev/null; then
+        chmod +x "$WIZARD_FILE"
+        . "$WIZARD_FILE"
+        run_wizard
+        rm -f "$WIZARD_FILE"
+    else
+        log "ERREUR : Impossible de télécharger l'assistant de configuration."
+        exit 1
+    fi
+    
+    clear
+    echo "=========================================="
+    echo "  Portal Auth - Installation"
+    echo "=========================================="
+    echo ""
+    echo "🚀 Démarrage de l'installation..."
+    echo ""
+    sleep 1
+fi
 
 # ========================================
 # ÉTAPE 1 : TÉLÉCHARGEMENT DE L'ARCHIVE
@@ -124,13 +154,65 @@ log "Scripts installés : auth.sh, check_update.sh, logout.sh"
 # ÉTAPE 5 : CONFIGURATION
 # ========================================
 if [ ! -f "$CONFIG_FILE" ]; then
-    log "Création du fichier de configuration (première installation)."
-    cp "$CONFIG_SRC" "$CONFIG_FILE"
-    chmod 600 "$CONFIG_FILE"  # Protection du fichier (contient identifiants)
-    log "Fichier créé : $CONFIG_FILE"
-    log "⚠️  IMPORTANT : Éditer $CONFIG_FILE pour configurer vos identifiants !"
+    log "Création du fichier de configuration..."
+    
+    # Créer le fichier de config avec les valeurs saisies
+    cat > "$CONFIG_FILE" << EOF
+#!/bin/sh
+#
+# portal_config.sh
+# Configuration centralisée pour le portail captif
+#
+
+# ========================================
+# IDENTIFIANTS PORTAIL CAPTIF
+# ========================================
+PORTAL_USER="$PORTAL_USER"
+PORTAL_PASS="$PORTAL_PASS"
+
+# ========================================
+# URL DU PORTAIL
+# ========================================
+BASE_URL="$BASE_URL"
+
+# ========================================
+# ALERTES DISCORD (optionnel)
+# ========================================
+DISCORD_WEBHOOK="$DISCORD_WEBHOOK"
+
+# ========================================
+# FICHIERS DE STATUT
+# ========================================
+STATE_FILE="/tmp/portal_auth_state"
+STATUS_FILE="/tmp/portal_auth_status"
+
+# ========================================
+# VERSION
+# ========================================
+LOCAL_VERSION_FILE="/etc/portal_auth_version"
+
+if [ -f "\$LOCAL_VERSION_FILE" ]; then
+    PORTAL_AUTH_VERSION="\$(cat "\$LOCAL_VERSION_FILE" 2>/dev/null | tr -d '\r\n')"
 else
-    log "Config déjà présente, conservée : $CONFIG_FILE"
+    PORTAL_AUTH_VERSION="dev"
+fi
+
+# ========================================
+# EXPORT DES VARIABLES
+# ========================================
+export PORTAL_USER
+export PORTAL_PASS
+export BASE_URL
+export DISCORD_WEBHOOK
+export STATE_FILE
+export STATUS_FILE
+export PORTAL_AUTH_VERSION
+EOF
+
+    chmod 600 "$CONFIG_FILE"
+    log "✅ Configuration créée : $CONFIG_FILE"
+else
+    log "Configuration déjà présente, conservée : $CONFIG_FILE"
 fi
 
 # ========================================
@@ -169,9 +251,22 @@ log "Version installée : $VERSION_VALUE"
 # ========================================
 # FIN DE L'INSTALLATION
 # ========================================
-log "Installation terminée avec succès."
-log "Scripts : $INSTALL_SCRIPTS_DIR"
-log "Config : $CONFIG_FILE"
-log "Version : $LOCAL_VERSION_FILE"
+echo ""
+echo "=========================================="
+echo "  ✅ Installation terminée avec succès !"
+echo "=========================================="
+echo ""
+echo "📂 Scripts installés : $INSTALL_SCRIPTS_DIR"
+echo "⚙️  Configuration    : $CONFIG_FILE"
+echo "📌 Version           : $VERSION_VALUE"
+echo ""
+echo "🔄 L'authentification démarre automatiquement toutes les minutes."
+echo "📊 Vérification des MAJ toutes les 30 minutes."
+echo ""
+echo "Commandes utiles :"
+echo "  • Tester maintenant  : sh /root/scripts/auth.sh"
+echo "  • Voir les logs      : logread -f | grep PORTAL_AUTH"
+echo "  • Se déconnecter     : sh /root/scripts/logout.sh"
+echo ""
 
 exit 0
