@@ -32,45 +32,17 @@ prompt_base_url() {
     echo ""
     echo "Entrez l'URL du portail captif (ex: https://portail.exemple.com:8090)"
     printf "URL du portail : "
-    read BASE_URL
+    read -r BASE_URL
     
-    if [ -z "$BASE_URL" ]; then
+    # Nettoyer les espaces et vérifier si vide
+    BASE_URL=$(echo "$BASE_URL" | tr -d '[:space:]')
+    
+    if [ -z "$BASE_URL" ] || [ "$BASE_URL" = "" ]; then
         echo ""
         echo "❌ L'URL ne peut pas être vide."
         sleep 2
         prompt_base_url
         return
-    fi
-    
-    # Extraire le hostname de l'URL pour le test (supporte http://, https://, et avec/sans port)
-    HOSTNAME=$(echo "$BASE_URL" | sed 's|^https\?://||' | sed 's|[:/].*||')
-    
-    echo ""
-    echo "🔍 Vérification de l'accessibilité de $HOSTNAME..."
-    
-    if ping -c 2 -W 3 "$HOSTNAME" >/dev/null 2>&1; then
-        echo "✅ Le portail est joignable !"
-        sleep 1
-    else
-        echo ""
-        echo "⚠️  AVERTISSEMENT : Impossible de joindre $HOSTNAME"
-        echo ""
-        echo "Cela peut être dû à :"
-        echo "  • Un problème de résolution DNS"
-        echo "  • Le portail n'est pas encore accessible"
-        echo "  • Problème de connectivité réseau"
-        echo ""
-        echo "💡 Si c'est un problème DNS, configurez dnsmasq sur OpenWrt"
-        echo "   ou ajoutez une entrée DNS via l'interface LuCI."
-        echo ""
-        printf "Continuer malgré tout ? (o/n) : "
-        read CONTINUE_CHOICE
-        
-        if [ "$CONTINUE_CHOICE" != "o" ] && [ "$CONTINUE_CHOICE" != "O" ]; then
-            echo ""
-            echo "❌ Installation annulée."
-            exit 1
-        fi
     fi
 }
 
@@ -82,9 +54,12 @@ prompt_credentials() {
     echo "🔐 Identifiants du portail captif"
     echo ""
     printf "Nom d'utilisateur : "
-    read PORTAL_USER
+    read -r PORTAL_USER
     
-    if [ -z "$PORTAL_USER" ]; then
+    # Nettoyer les espaces
+    PORTAL_USER=$(echo "$PORTAL_USER" | tr -d '[:space:]')
+    
+    if [ -z "$PORTAL_USER" ] || [ "$PORTAL_USER" = "" ]; then
         echo ""
         echo "❌ Le nom d'utilisateur ne peut pas être vide."
         sleep 2
@@ -94,9 +69,12 @@ prompt_credentials() {
     
     echo ""
     printf "Mot de passe : "
-    read PORTAL_PASS
+    read -r PORTAL_PASS
     
-    if [ -z "$PORTAL_PASS" ]; then
+    # Nettoyer les espaces
+    PORTAL_PASS=$(echo "$PORTAL_PASS" | tr -d '[:space:]')
+    
+    if [ -z "$PORTAL_PASS" ] || [ "$PORTAL_PASS" = "" ]; then
         echo ""
         echo "❌ Le mot de passe ne peut pas être vide."
         sleep 2
@@ -116,9 +94,12 @@ prompt_discord() {
     echo "entrez l'URL de votre webhook. Sinon, laissez vide."
     echo ""
     printf "Webhook Discord : "
-    read DISCORD_WEBHOOK
+    read -r DISCORD_WEBHOOK
     
-    if [ -n "$DISCORD_WEBHOOK" ]; then
+    # Nettoyer les espaces
+    DISCORD_WEBHOOK=$(echo "$DISCORD_WEBHOOK" | tr -d '[:space:]')
+    
+    if [ -n "$DISCORD_WEBHOOK" ] && [ "$DISCORD_WEBHOOK" != "" ]; then
         echo ""
         echo "✅ Notifications Discord activées !"
         sleep 1
@@ -135,16 +116,19 @@ confirm_config() {
     echo "URL du portail  : $BASE_URL"
     echo "Utilisateur     : $PORTAL_USER"
     echo "Mot de passe    : $(echo "$PORTAL_PASS" | sed 's/./*/g')"
-    if [ -n "$DISCORD_WEBHOOK" ]; then
+    if [ -n "$DISCORD_WEBHOOK" ] && [ "$DISCORD_WEBHOOK" != "" ]; then
         echo "Discord         : Activé"
     else
         echo "Discord         : Désactivé"
     fi
     echo ""
     printf "Confirmer et lancer l'installation ? (o/n) : "
-    read CONFIRM
+    read -r CONFIRM
     
-    if [ "$CONFIRM" != "o" ] && [ "$CONFIRM" != "O" ]; then
+    # Nettoyer et normaliser la réponse
+    CONFIRM=$(echo "$CONFIRM" | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]')
+    
+    if [ "$CONFIRM" != "o" ]; then
         echo ""
         echo "❌ Installation annulée."
         exit 1
