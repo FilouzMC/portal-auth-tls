@@ -152,22 +152,60 @@ confirm_config() {
 }
 
 # ========================================
+# ÉCRITURE DU FICHIER DE CONFIGURATION
+# ========================================
+write_config() {
+    CONFIG_FILE="$1"
+    
+    echo ""
+    echo "💾 Création du fichier de configuration..."
+    
+    mkdir -p "$(dirname "$CONFIG_FILE")"
+    
+    cat > "$CONFIG_FILE" <<EOF
+#!/bin/sh
+#
+# portal_config.sh
+# Configuration du portail captif
+# Généré automatiquement par l'assistant d'installation
+#
+
+# URL du portail captif (avec protocole et port)
+export BASE_URL="$BASE_URL"
+
+# Identifiants du portail
+export PORTAL_USER="$PORTAL_USER"
+export PORTAL_PASS="$PORTAL_PASS"
+
+# Webhook Discord (optionnel)
+export DISCORD_WEBHOOK="$DISCORD_WEBHOOK"
+EOF
+    
+    chmod 600 "$CONFIG_FILE"
+    
+    echo "✅ Configuration enregistrée dans $CONFIG_FILE"
+    sleep 1
+}
+
+# ========================================
 # FONCTION PRINCIPALE
 # ========================================
 run_wizard() {
+    CONFIG_PATH="$1"
+    
+    if [ -z "$CONFIG_PATH" ]; then
+        echo "❌ ERREUR : Chemin du fichier de configuration non spécifié."
+        exit 1
+    fi
+    
     prompt_base_url
     prompt_credentials
     prompt_discord
     confirm_config
-    
-    # Exporter les variables pour le script parent
-    export PORTAL_USER
-    export PORTAL_PASS
-    export BASE_URL
-    export DISCORD_WEBHOOK
+    write_config "$CONFIG_PATH"
 }
 
 # Lancer l'assistant si appelé directement
-if [ "$1" = "run" ]; then
-    run_wizard
+if [ "$1" = "run" ] && [ -n "$2" ]; then
+    run_wizard "$2"
 fi

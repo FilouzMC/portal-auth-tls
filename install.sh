@@ -72,22 +72,30 @@ if [ "$NEED_CONFIG" = "true" ]; then
     if curl -fsSL "$WIZARD_URL" -o "$WIZARD_FILE" 2>/dev/null || wget -q -O "$WIZARD_FILE" "$WIZARD_URL" 2>/dev/null; then
         chmod +x "$WIZARD_FILE"
         . "$WIZARD_FILE"
-        run_wizard
+        
+        # Créer le répertoire de destination si nécessaire
+        mkdir -p "$INSTALL_SCRIPTS_DIR"
+        
+        # Lancer l'assistant qui créera le fichier de configuration
+        run_wizard "$CONFIG_FILE"
         rm -f "$WIZARD_FILE"
     else
         log "ERREUR : Impossible de télécharger l'assistant de configuration."
         exit 1
     fi
-    
-    clear
-    echo "=========================================="
-    echo "  Portal Auth - Installation"
-    echo "=========================================="
-    echo ""
-    echo "🚀 Démarrage de l'installation..."
-    echo ""
-    sleep 1
 fi
+
+# ========================================
+# CONTINUATION DE L'INSTALLATION
+# ========================================
+clear
+echo "=========================================="
+echo "  Portal Auth - Installation"
+echo "=========================================="
+echo ""
+echo "🚀 Poursuite de l'installation..."
+echo ""
+sleep 1
 
 # ========================================
 # ÉTAPE 1 : TÉLÉCHARGEMENT DE L'ARCHIVE
@@ -164,74 +172,8 @@ cp "$SCRIPTS_SRC"/*.sh "$INSTALL_SCRIPTS_DIR"/
 chmod +x "$INSTALL_SCRIPTS_DIR"/*.sh
 
 log "Scripts installés : auth.sh, check_update.sh, logout.sh"
-
 # ========================================
-# ÉTAPE 5 : CONFIGURATION
-# ========================================
-if [ ! -f "$CONFIG_FILE" ]; then
-    log "Création du fichier de configuration..."
-    
-    # Créer le fichier de config avec les valeurs saisies
-    cat > "$CONFIG_FILE" << EOF
-#!/bin/sh
-#
-# portal_config.sh
-# Configuration centralisée pour le portail captif
-#
-
-# ========================================
-# IDENTIFIANTS PORTAIL CAPTIF
-# ========================================
-PORTAL_USER="$PORTAL_USER"
-PORTAL_PASS="$PORTAL_PASS"
-
-# ========================================
-# URL DU PORTAIL
-# ========================================
-BASE_URL="$BASE_URL"
-
-# ========================================
-# ALERTES DISCORD (optionnel)
-# ========================================
-DISCORD_WEBHOOK="$DISCORD_WEBHOOK"
-
-# ========================================
-# FICHIERS DE STATUT
-# ========================================
-STATE_FILE="/tmp/portal_auth_state"
-STATUS_FILE="/tmp/portal_auth_status"
-
-# ========================================
-# VERSION
-# ========================================
-LOCAL_VERSION_FILE="/etc/portal_auth_version"
-
-if [ -f "\$LOCAL_VERSION_FILE" ]; then
-    PORTAL_AUTH_VERSION="\$(cat "\$LOCAL_VERSION_FILE" 2>/dev/null | tr -d '\r\n')"
-else
-    PORTAL_AUTH_VERSION="dev"
-fi
-
-# ========================================
-# EXPORT DES VARIABLES
-# ========================================
-export PORTAL_USER
-export PORTAL_PASS
-export BASE_URL
-export DISCORD_WEBHOOK
-export STATE_FILE
-export STATUS_FILE
-export PORTAL_AUTH_VERSION
-EOF
-
-    chmod 600 "$CONFIG_FILE"
-    log "✅ Configuration créée : $CONFIG_FILE"
-else
-    log "Configuration déjà présente, conservée : $CONFIG_FILE"
-fi
-
-# ========================================
-# ÉTAPE 6 : CONFIGURATION DES TÂCHES CRON
+# ÉTAPE 5 : CONFIGURATION DES TÂCHES CRON
 # ========================================
 log "Mise à jour des tâches cron..."
 
@@ -272,7 +214,7 @@ echo "  ✅ Installation terminée avec succès !"
 echo "=========================================="
 echo ""
 echo "📂 Scripts installés : $INSTALL_SCRIPTS_DIR"
-echo "⚙️  Configuration    : $CONFIG_FILE"
+echo "⚙️ Configuration    : $CONFIG_FILE"
 echo "📌 Version           : $VERSION_VALUE"
 echo ""
 echo "🔄 L'authentification démarre automatiquement toutes les minutes."
