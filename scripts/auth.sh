@@ -7,6 +7,15 @@
 # Charger la configuration
 . /root/scripts/portal_config.sh
 
+# Vérifier que les variables essentielles sont définies
+if [ -z "$PORTAL_USER" ] || [ -z "$PORTAL_PASS" ] || [ -z "$BASE_URL" ]; then
+    echo "ERREUR : Configuration incomplète dans /root/scripts/portal_config.sh"
+    echo "PORTAL_USER=$PORTAL_USER"
+    echo "PORTAL_PASS=($([ -n "$PORTAL_PASS" ] && echo 'défini' || echo 'vide'))"
+    echo "BASE_URL=$BASE_URL"
+    exit 1
+fi
+
 # Timestamp en millisecondes pour le portail (paramètre "a")
 TIMESTAMP="$(date +%s)000"
 
@@ -77,8 +86,23 @@ fi
 # ===========================
 #  ÉTAPE 3 : CONNEXION (mode=191)
 # ===========================
+LOGIN_URL="$BASE_URL/login.xml"
 LOGIN_BODY="mode=191&username=$PORTAL_USER&password=$PORTAL_PASS&a=$TIMESTAMP&producttype=0"
-LOGIN_RESP="$(wget -q --no-check-certificate --post-data="$LOGIN_BODY" -O - "$BASE_URL/login.xml" 2>/dev/null)"
+
+log "Tentative de connexion à $LOGIN_URL avec user=$PORTAL_USER"
+
+# Créer un fichier temporaire pour la réponse
+TMP_RESP="/tmp/portal_auth_response_$$"
+if wget --no-check-certificate \
+     --header="Content-Type: application/x-www-form-urlencoded" \
+     --post-data="$LOGIN_BODY" \
+     -O "$TMP_RESP" \
+     "$LOGIN_URL" 2>&1 | logger -t "PORTAL_AUTH_WGET"; then
+    LOGIN_RESP="$(cat "$TMP_RESP" 2>/dev/null)"
+else
+    LOGIN_RESP="Erreur wget (code: $?)"
+fi
+rm -f "$TMP_RESP"
 
 log "Réponse login brute : $LOGIN_RESP"
 
