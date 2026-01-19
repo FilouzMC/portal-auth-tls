@@ -25,7 +25,7 @@ set_status() {
 echo "Déconnexion du portail en cours..."
 
 LOGOUT_BODY="mode=193&username=$PORTAL_USER&a=$TIMESTAMP&producttype=0"
-LOGOUT_RESP="$(curl -s -k -X POST "$BASE_URL/logout.xml" -d "$LOGOUT_BODY")"
+LOGOUT_RESP="$(wget -q --tries=1 --no-check-certificate --post-data="$LOGOUT_BODY" -O - "$BASE_URL/logout.xml" 2>/dev/null)"
 
 if echo "$LOGOUT_RESP" | grep -q "LOGIN"; then
     echo "✅ Déconnecté avec succès."

@@ -26,7 +26,7 @@ discord_alert() {
     local JSON
     JSON="{\"embeds\": [{\"title\": \"🔐 Portail Captif v$PORTAL_AUTH_VERSION\", \"description\": \"$MSG\", \"color\": $COLOR}]}"
 
-    curl -s -H "Content-Type: application/json" -d "$JSON" "$DISCORD_WEBHOOK" >/dev/null 2>&1
+    wget -q --tries=1 --header="Content-Type: application/json" --post-data="$JSON" -O /dev/null "$DISCORD_WEBHOOK" >/dev/null 2>&1
 }
 
 # Écrit un statut compact pour LuCI
@@ -47,7 +47,7 @@ if ping -c 1 -W 2 8.8.8.8 >/dev/null 2>&1; then
     # Internet OK -> KeepAlive
     LIVE_URL="$BASE_URL/live?mode=192&username=$PORTAL_USER&a=$TIMESTAMP&producttype=0"
 
-    curl -s -k "$LIVE_URL" >/dev/null 2>&1
+    wget -q --tries=1 --no-check-certificate -O /dev/null "$LIVE_URL" >/dev/null 2>&1
 
     echo "ONLINE" > "$STATE_FILE"
 
@@ -62,7 +62,7 @@ fi
 # ===========================
 #  ÉTAPE 2 : PORTAIL JOIGNABLE ?
 # ===========================
-if ! curl -s -k --max-time 5 "$BASE_URL" >/dev/null 2>&1; then
+if ! wget -q --tries=1 --no-check-certificate -T 5 -O /dev/null "$BASE_URL" >/dev/null 2>&1; then
     log "Impossible d'atteindre le portail : $BASE_URL"
     set_status "ERROR" "Portail injoignable ($BASE_URL)."
 
@@ -78,7 +78,7 @@ fi
 #  ÉTAPE 3 : CONNEXION (mode=191)
 # ===========================
 LOGIN_BODY="mode=191&username=$PORTAL_USER&password=$PORTAL_PASS&a=$TIMESTAMP&producttype=0"
-LOGIN_RESP="$(curl -s -k -X POST "$BASE_URL/login.xml" -d "$LOGIN_BODY")"
+LOGIN_RESP="$(wget -q --tries=1 --no-check-certificate --post-data="$LOGIN_BODY" -O - "$BASE_URL/login.xml" 2>/dev/null)"
 
 log "Réponse login brute : $LOGIN_RESP"
 
