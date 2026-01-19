@@ -5,8 +5,9 @@
 #
 
 LOCAL_VERSION_FILE="/etc/portal_auth_version"
-REMOTE_VERSION_URL="https://raw.githubusercontent.com/FilouzMC/portal-auth-tls/main/version.txt"
-REMOTE_INSTALL_URL="https://raw.githubusercontent.com/FilouzMC/portal-auth-tls/main/install.sh"
+REMOTE_VERSION_URL="https://raw.githubusercontent.com/FilouzMC/portal-auth-tls/$GITHUB_BRANCH/version.txt"
+REMOTE_INSTALL_URL="https://raw.githubusercontent.com/FilouzMC/portal-auth-tls/$GITHUB_BRANCH/install.sh"
+GITHUB_BRANCH="speed-project-with-updater"
 TMP_INSTALLER="/tmp/portal_auth_install.sh"
 
 log() {
