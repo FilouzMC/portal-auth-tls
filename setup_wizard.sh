@@ -42,8 +42,8 @@ prompt_base_url() {
         return
     fi
     
-    # Extraire le hostname de l'URL pour le test
-    HOSTNAME=$(echo "$BASE_URL" | sed -e 's|^[^/]*//||' -e 's|[:/].*||')
+    # Extraire le hostname de l'URL pour le test (supporte http://, https://, et avec/sans port)
+    HOSTNAME=$(echo "$BASE_URL" | sed 's|^https\?://||' | sed 's|[:/].*||')
     
     echo ""
     echo "🔍 Vérification de l'accessibilité de $HOSTNAME..."
