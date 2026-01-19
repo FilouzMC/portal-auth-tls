@@ -31,20 +31,8 @@ set_status() {
 
 echo "Déconnexion du portail en cours..."
 
-LOGOUT_URL="$BASE_URL/logout.xml"
 LOGOUT_BODY="mode=193&username=$PORTAL_USER&a=$TIMESTAMP&producttype=0"
-
-TMP_RESP="/tmp/portal_auth_logout_$$"
-if wget --no-check-certificate \
-     --header="Content-Type: application/x-www-form-urlencoded" \
-     --post-data="$LOGOUT_BODY" \
-     -O "$TMP_RESP" \
-     "$LOGOUT_URL" 2>&1 | logger -t "PORTAL_AUTH_WGET"; then
-    LOGOUT_RESP="$(cat "$TMP_RESP" 2>/dev/null)"
-else
-    LOGOUT_RESP="Erreur wget (code: $?)"
-fi
-rm -f "$TMP_RESP"
+LOGOUT_RESP="$(curl -s -X POST -d "$LOGOUT_BODY" "$BASE_URL/logout.xml")"
 
 if echo "$LOGOUT_RESP" | grep -q "LOGIN"; then
     echo "✅ Déconnecté avec succès."

@@ -5,9 +5,9 @@
 #
 
 LOCAL_VERSION_FILE="/etc/portal_auth_version"
+GITHUB_BRANCH="speed-project-with-updater"
 REMOTE_VERSION_URL="https://raw.githubusercontent.com/FilouzMC/portal-auth-tls/$GITHUB_BRANCH/version.txt"
 REMOTE_INSTALL_URL="https://raw.githubusercontent.com/FilouzMC/portal-auth-tls/$GITHUB_BRANCH/install.sh"
-GITHUB_BRANCH="speed-project-with-updater"
 TMP_INSTALLER="/tmp/portal_auth_install.sh"
 
 log() {
@@ -25,7 +25,7 @@ read_local_version() {
 }
 
 LOCAL_VERSION="$(read_local_version)"
-REMOTE_VERSION="$(wget -q -O - "$REMOTE_VERSION_URL" 2>/dev/null | tr -d '\r\n')"
+REMOTE_VERSION="$(curl -fsSL "$REMOTE_VERSION_URL" 2>/dev/null | tr -d '\r\n')"
 
 if [ -z "$REMOTE_VERSION" ]; then
     log "Impossible de récupérer la version distante ($REMOTE_VERSION_URL)."
@@ -39,7 +39,7 @@ fi
 
 log "Nouvelle version détectée (locale: $LOCAL_VERSION, distante: $REMOTE_VERSION). Téléchargement de install.sh..."
 
-if ! wget -q -O "$TMP_INSTALLER" "$REMOTE_INSTALL_URL"; then
+if ! curl -fsSL "$REMOTE_INSTALL_URL" -o "$TMP_INSTALLER"; then
     log "Échec du téléchargement de install.sh ($REMOTE_INSTALL_URL)."
     exit 1
 fi

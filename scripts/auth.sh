@@ -21,7 +21,6 @@ TIMESTAMP="$(date +%s)000"
 
 log() {
     local MSG="$1"
-    # Tag dans syslog : PORTAL_AUTH
     logger -t "PORTAL_AUTH" "$MSG"
     echo "$(date +'%Y-%m-%d %H:%M:%S') [v$PORTAL_AUTH_VERSION] - $MSG"
 }
@@ -30,22 +29,19 @@ discord_alert() {
     [ -z "$DISCORD_WEBHOOK" ] && return
 
     local MSG="$1"
-    local COLOR="$2"  # ex: 65280=vert, 16711680=rouge, 16776960=jaune
+    local COLOR="$2"
 
     local JSON
     JSON="{\"embeds\": [{\"title\": \"🔐 Portail Captif v$PORTAL_AUTH_VERSION\", \"description\": \"$MSG\", \"color\": $COLOR}]}"
 
-    wget -q --header="Content-Type: application/json" --post-data="$JSON" -O /dev/null "$DISCORD_WEBHOOK" >/dev/null 2>&1
+    curl -s -H "Content-Type: application/json" -d "$JSON" "$DISCORD_WEBHOOK" >/dev/null 2>&1
 }
 
-# Écrit un statut compact pour LuCI
-# Format : CODE|Message
 set_status() {
     local CODE="$1"
     local MSG="$2"
 
     [ -z "$STATUS_FILE" ] && STATUS_FILE="/tmp/portal_auth_status"
-
     echo "${CODE}|${MSG}" > "$STATUS_FILE"
 }
 
@@ -56,10 +52,9 @@ if ping -c 1 -W 2 8.8.8.8 >/dev/null 2>&1; then
     # Internet OK -> KeepAlive
     LIVE_URL="$BASE_URL/live?mode=192&username=$PORTAL_USER&a=$TIMESTAMP&producttype=0"
 
-    wget -q --no-check-certificate -O /dev/null "$LIVE_URL" >/dev/null 2>&1
+    curl -s "$LIVE_URL" >/dev/null 2>&1
 
     echo "ONLINE" > "$STATE_FILE"
-
     set_status "OK" "Internet OK, KeepAlive envoyé (v$PORTAL_AUTH_VERSION)."
     log "Internet OK, KeepAlive envoyé au portail."
 
@@ -71,7 +66,7 @@ fi
 # ===========================
 #  ÉTAPE 2 : PORTAIL JOIGNABLE ?
 # ===========================
-if ! wget -q --no-check-certificate -T 5 -O /dev/null "$BASE_URL" >/dev/null 2>&1; then
+if ! curl -s --max-time 5 "$BASE_URL" >/dev/null 2>&1; then
     log "Impossible d'atteindre le portail : $BASE_URL"
     set_status "ERROR" "Portail injoignable ($BASE_URL)."
 
@@ -86,23 +81,8 @@ fi
 # ===========================
 #  ÉTAPE 3 : CONNEXION (mode=191)
 # ===========================
-LOGIN_URL="$BASE_URL/login.xml"
 LOGIN_BODY="mode=191&username=$PORTAL_USER&password=$PORTAL_PASS&a=$TIMESTAMP&producttype=0"
-
-log "Tentative de connexion à $LOGIN_URL avec user=$PORTAL_USER"
-
-# Créer un fichier temporaire pour la réponse
-TMP_RESP="/tmp/portal_auth_response_$$"
-if wget --no-check-certificate \
-     --header="Content-Type: application/x-www-form-urlencoded" \
-     --post-data="$LOGIN_BODY" \
-     -O "$TMP_RESP" \
-     "$LOGIN_URL" 2>&1 | logger -t "PORTAL_AUTH_WGET"; then
-    LOGIN_RESP="$(cat "$TMP_RESP" 2>/dev/null)"
-else
-    LOGIN_RESP="Erreur wget (code: $?)"
-fi
-rm -f "$TMP_RESP"
+LOGIN_RESP="$(curl -s -X POST -d "$LOGIN_BODY" "$BASE_URL/login.xml")"
 
 log "Réponse login brute : $LOGIN_RESP"
 
