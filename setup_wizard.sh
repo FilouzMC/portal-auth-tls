@@ -44,6 +44,10 @@ prompt_base_url() {
         prompt_base_url
         return
     fi
+    
+    echo ""
+    echo "✅ URL enregistrée !"
+    sleep 1
 }
 
 # ========================================
@@ -81,6 +85,10 @@ prompt_credentials() {
         prompt_credentials
         return
     fi
+    
+    echo ""
+    echo "✅ Identifiants enregistrés !"
+    sleep 1
 }
 
 # ========================================
