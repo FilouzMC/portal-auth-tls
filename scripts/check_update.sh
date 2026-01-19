@@ -24,7 +24,7 @@ read_local_version() {
 }
 
 LOCAL_VERSION="$(read_local_version)"
-REMOTE_VERSION="$(wget -q --tries=1 -O - "$REMOTE_VERSION_URL" 2>/dev/null | tr -d '\r\n')"
+REMOTE_VERSION="$(wget -q -O - "$REMOTE_VERSION_URL" 2>/dev/null | tr -d '\r\n')"
 
 if [ -z "$REMOTE_VERSION" ]; then
     log "Impossible de récupérer la version distante ($REMOTE_VERSION_URL)."
@@ -38,7 +38,7 @@ fi
 
 log "Nouvelle version détectée (locale: $LOCAL_VERSION, distante: $REMOTE_VERSION). Téléchargement de install.sh..."
 
-if ! wget -q --tries=1 -O "$TMP_INSTALLER" "$REMOTE_INSTALL_URL"; then
+if ! wget -q -O "$TMP_INSTALLER" "$REMOTE_INSTALL_URL"; then
     log "Échec du téléchargement de install.sh ($REMOTE_INSTALL_URL)."
     exit 1
 fi

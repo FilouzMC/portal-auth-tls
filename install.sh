@@ -41,7 +41,7 @@ rm -rf "$WORK_DIR"
 mkdir -p "$WORK_DIR"
 
 log "Téléchargement de l'archive GitHub ($ARCHIVE_URL)..."
-if ! wget -q --tries=1 -O "$ARCHIVE_FILE" "$ARCHIVE_URL"; then
+if ! wget -q -O "$ARCHIVE_FILE" "$ARCHIVE_URL"; then
     log "Échec du téléchargement de l'archive."
     exit 1
 fi
