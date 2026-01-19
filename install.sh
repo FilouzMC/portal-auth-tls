@@ -45,59 +45,6 @@ cleanup() {
 trap cleanup EXIT
 
 # ========================================
-# ÉTAPE 0 : ASSISTANT DE CONFIGURATION
-# ========================================
-# Vérifier si la config existe ET si toutes les variables nécessaires sont présentes
-NEED_CONFIG=false
-
-if [ ! -f "$CONFIG_FILE" ]; then
-    # Pas de config du tout = première installation
-    NEED_CONFIG=true
-    log "Première installation détectée."
-else
-    # Vérifier que toutes les variables requises sont présentes
-    . "$CONFIG_FILE"
-    if [ -z "$BASE_URL" ] || [ -z "$PORTAL_USER" ] || [ -z "$PORTAL_PASS" ]; then
-        log "Configuration incomplète détectée (mise à jour ou variables manquantes)."
-        NEED_CONFIG=true
-    fi
-fi
-
-if [ "$NEED_CONFIG" = "true" ]; then
-    # Télécharger et exécuter l'assistant de configuration
-    WIZARD_URL="https://raw.githubusercontent.com/$GITHUB_USER/$GITHUB_REPO/$GITHUB_BRANCH/setup_wizard.sh"
-    WIZARD_FILE="/tmp/setup_wizard.sh"
-    
-    log "Téléchargement de l'assistant de configuration..."
-    if curl -fsSL "$WIZARD_URL" -o "$WIZARD_FILE" 2>/dev/null || wget -q -O "$WIZARD_FILE" "$WIZARD_URL" 2>/dev/null; then
-        chmod +x "$WIZARD_FILE"
-        . "$WIZARD_FILE"
-        
-        # Créer le répertoire de destination si nécessaire
-        mkdir -p "$INSTALL_SCRIPTS_DIR"
-        
-        # Lancer l'assistant qui créera le fichier de configuration
-        run_wizard "$CONFIG_FILE"
-        rm -f "$WIZARD_FILE"
-    else
-        log "ERREUR : Impossible de télécharger l'assistant de configuration."
-        exit 1
-    fi
-fi
-
-# ========================================
-# CONTINUATION DE L'INSTALLATION
-# ========================================
-clear
-echo "=========================================="
-echo "  Portal Auth - Installation"
-echo "=========================================="
-echo ""
-echo "🚀 Poursuite de l'installation..."
-echo ""
-sleep 1
-
-# ========================================
 # ÉTAPE 1 : TÉLÉCHARGEMENT DE L'ARCHIVE
 # ========================================
 rm -rf "$WORK_DIR"
@@ -172,8 +119,22 @@ cp "$SCRIPTS_SRC"/*.sh "$INSTALL_SCRIPTS_DIR"/
 chmod +x "$INSTALL_SCRIPTS_DIR"/*.sh
 
 log "Scripts installés : auth.sh, check_update.sh, logout.sh"
+
 # ========================================
-# ÉTAPE 5 : CONFIGURATION DES TÂCHES CRON
+# ÉTAPE 5 : CONFIGURATION
+# ========================================
+if [ ! -f "$CONFIG_FILE" ]; then
+    log "Création du fichier de configuration (première installation)."
+    cp "$CONFIG_SRC" "$CONFIG_FILE"
+    chmod 600 "$CONFIG_FILE"  # Protection du fichier (contient identifiants)
+    log "Fichier créé : $CONFIG_FILE"
+    log "⚠️  IMPORTANT : Éditer $CONFIG_FILE pour configurer vos identifiants !"
+else
+    log "Config déjà présente, conservée : $CONFIG_FILE"
+fi
+
+# ========================================
+# ÉTAPE 6 : CONFIGURATION DES TÂCHES CRON
 # ========================================
 log "Mise à jour des tâches cron..."
 
@@ -208,22 +169,9 @@ log "Version installée : $VERSION_VALUE"
 # ========================================
 # FIN DE L'INSTALLATION
 # ========================================
-echo ""
-echo "=========================================="
-echo "  ✅ Installation terminée avec succès !"
-echo "=========================================="
-echo ""
-echo "📂 Scripts installés : $INSTALL_SCRIPTS_DIR"
-echo "⚙️ Configuration    : $CONFIG_FILE"
-echo "📌 Version           : $VERSION_VALUE"
-echo ""
-echo "🔄 L'authentification démarre automatiquement toutes les minutes."
-echo "📊 Vérification des MAJ toutes les 30 minutes."
-echo ""
-echo "Commandes utiles :"
-echo "  • Tester maintenant  : sh /root/scripts/auth.sh"
-echo "  • Voir les logs      : logread -f | grep PORTAL_AUTH"
-echo "  • Se déconnecter     : sh /root/scripts/logout.sh"
-echo ""
+log "Installation terminée avec succès."
+log "Scripts : $INSTALL_SCRIPTS_DIR"
+log "Config : $CONFIG_FILE"
+log "Version : $LOCAL_VERSION_FILE"
 
 exit 0
