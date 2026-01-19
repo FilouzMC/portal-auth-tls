@@ -50,8 +50,20 @@ trap cleanup EXIT
 rm -rf "$WORK_DIR"
 mkdir -p "$WORK_DIR"
 
+# Vérifier et installer curl si nécessaire
+if ! command -v curl >/dev/null 2>&1; then
+    log "curl non trouvé, installation via opkg..."
+    opkg update
+    opkg install curl
+    if ! command -v curl >/dev/null 2>&1; then
+        log "ERREUR : Impossible d'installer curl"
+        exit 1
+    fi
+    log "curl installé avec succès"
+fi
+
 log "Téléchargement de l'archive GitHub..."
-if ! curl -fsSL "$ARCHIVE_URL" -o "$ARCHIVE_FILE"; then
+if ! wget -q -O "$ARCHIVE_FILE" "$ARCHIVE_URL"; then
     log "Échec du téléchargement de l'archive."
     exit 1
 fi
