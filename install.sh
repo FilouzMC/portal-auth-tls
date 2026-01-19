@@ -47,8 +47,23 @@ trap cleanup EXIT
 # ========================================
 # ÉTAPE 0 : ASSISTANT DE CONFIGURATION
 # ========================================
-# Si la config existe déjà, on skip l'assistant (mise à jour)
+# Vérifier si la config existe ET si toutes les variables nécessaires sont présentes
+NEED_CONFIG=false
+
 if [ ! -f "$CONFIG_FILE" ]; then
+    # Pas de config du tout = première installation
+    NEED_CONFIG=true
+    log "Première installation détectée."
+else
+    # Vérifier que toutes les variables requises sont présentes
+    . "$CONFIG_FILE"
+    if [ -z "$BASE_URL" ] || [ -z "$PORTAL_USER" ] || [ -z "$PORTAL_PASS" ]; then
+        log "Configuration incomplète détectée (mise à jour ou variables manquantes)."
+        NEED_CONFIG=true
+    fi
+fi
+
+if [ "$NEED_CONFIG" = "true" ]; then
     # Télécharger et exécuter l'assistant de configuration
     WIZARD_URL="https://raw.githubusercontent.com/$GITHUB_USER/$GITHUB_REPO/$GITHUB_BRANCH/setup_wizard.sh"
     WIZARD_FILE="/tmp/setup_wizard.sh"
