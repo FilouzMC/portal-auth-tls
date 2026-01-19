@@ -27,7 +27,7 @@ ARCHIVE_FILE="$WORK_DIR/repo.tar.gz"
 # DESTINATIONS SUR LE ROUTEUR
 # ========================================
 INSTALL_SCRIPTS_DIR="/root/scripts"
-UCI_CONFIG_DST="/etc/config/portal_auth"
+CONFIG_FILE="$INSTALL_SCRIPTS_DIR/portal_config.sh"
 LOCAL_VERSION_FILE="/etc/portal_auth_version"
 
 # ========================================
@@ -85,11 +85,11 @@ log "Archive extraite dans : $SRC_ROOT"
 # ÉTAPE 3 : VÉRIFICATIONS DES FICHIERS
 # ========================================
 SCRIPTS_SRC="$SRC_ROOT/scripts"
-CONFIG_SRC="$SRC_ROOT/config/portal_auth"
+CONFIG_SRC="$SRC_ROOT/config/portal_config.sh"
 VERSION_SRC="$SRC_ROOT/version.txt"
 
 [ -d "$SCRIPTS_SRC" ] || { log "Dossier scripts introuvable"; exit 1; }
-[ -f "$CONFIG_SRC" ] || { log "Fichier config UCI introuvable"; exit 1; }
+[ -f "$CONFIG_SRC" ] || { log "Fichier config introuvable"; exit 1; }
 
 # ========================================
 # ÉTAPE 4 : INSTALLATION DES SCRIPTS
@@ -98,7 +98,7 @@ log "Installation des scripts dans $INSTALL_SCRIPTS_DIR..."
 mkdir -p "$INSTALL_SCRIPTS_DIR"
 
 # Supprimer les anciens scripts
-for file in auth.sh check_update.sh load_portal_config.sh logout.sh; do
+for file in auth.sh check_update.sh logout.sh; do
     rm -f "$INSTALL_SCRIPTS_DIR/$file"
 done
 
@@ -106,18 +106,19 @@ done
 cp "$SCRIPTS_SRC"/*.sh "$INSTALL_SCRIPTS_DIR"/
 chmod +x "$INSTALL_SCRIPTS_DIR"/*.sh
 
-log "Scripts installés : auth.sh, check_update.sh, load_portal_config.sh, logout.sh"
+log "Scripts installés : auth.sh, check_update.sh, logout.sh"
 
 # ========================================
-# ÉTAPE 5 : CONFIGURATION UCI
+# ÉTAPE 5 : CONFIGURATION
 # ========================================
-if [ ! -f "$UCI_CONFIG_DST" ]; then
-    log "Création du fichier de configuration UCI (première installation)."
-    mkdir -p "$(dirname "$UCI_CONFIG_DST")"
-    cp "$CONFIG_SRC" "$UCI_CONFIG_DST"
-    log "Fichier créé : $UCI_CONFIG_DST"
+if [ ! -f "$CONFIG_FILE" ]; then
+    log "Création du fichier de configuration (première installation)."
+    cp "$CONFIG_SRC" "$CONFIG_FILE"
+    chmod 600 "$CONFIG_FILE"  # Protection du fichier (contient identifiants)
+    log "Fichier créé : $CONFIG_FILE"
+    log "⚠️  IMPORTANT : Éditer $CONFIG_FILE pour configurer vos identifiants !"
 else
-    log "Config UCI déjà présente, conservée."
+    log "Config déjà présente, conservée : $CONFIG_FILE"
 fi
 
 # ========================================
@@ -141,21 +142,7 @@ printf "%s\n%s\n%s\n" "$FILTERED_CRON" "$AUTH_CRON" "$UPDATE_CRON" | sed '/^$/d'
 log "Cron configuré : auth.sh (1 min) et check_update.sh (30 min)"
 
 # ========================================
-# ÉTAPE 7 : REDÉMARRAGE DES SERVICES WEB
-# ========================================
-# Optionnel : redémarrer uhttpd et rpcd pour une future interface LuCI
-if [ -x /etc/init.d/uhttpd ]; then
-    log "Redémarrage de uHTTPd..."
-    /etc/init.d/uhttpd restart >/dev/null 2>&1 || true
-fi
-
-if [ -x /etc/init.d/rpcd ]; then
-    log "Redémarrage de rpcd..."
-    /etc/init.d/rpcd restart >/dev/null 2>&1 || true
-fi
-
-# ========================================
-# ÉTAPE 8 : MISE À JOUR DE LA VERSION
+# ÉTAPE 7 : MISE À JOUR DE LA VERSION
 # ========================================
 VERSION_VALUE="dev"
 if [ -n "$NEW_VERSION" ]; then
@@ -172,7 +159,7 @@ log "Version installée : $VERSION_VALUE"
 # ========================================
 log "Installation terminée avec succès."
 log "Scripts : $INSTALL_SCRIPTS_DIR"
-log "Config UCI : $UCI_CONFIG_DST"
+log "Config : $CONFIG_FILE"
 log "Version : $LOCAL_VERSION_FILE"
 
 exit 0

@@ -4,8 +4,8 @@
 # Script d'authentification / keep-alive du portail captif
 #
 
-# 1) Charger la configuration (UCI + version)
-. /root/scripts/load_portal_config.sh
+# Charger la configuration
+. /root/scripts/portal_config.sh
 
 # Timestamp en millisecondes pour le portail (paramètre "a")
 TIMESTAMP="$(date +%s)000"

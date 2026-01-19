@@ -4,7 +4,8 @@
 # Déconnexion manuelle du portail captif
 #
 
-. /root/scripts/load_portal_config.sh
+# Charger la configuration
+. /root/scripts/portal_config.sh
 
 TIMESTAMP="$(date +%s)000"
 
