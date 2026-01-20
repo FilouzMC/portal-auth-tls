@@ -141,8 +141,8 @@ log "Mise à jour des tâches cron..."
 # Auth toutes les 1 minute
 AUTH_CRON="* * * * * $INSTALL_SCRIPTS_DIR/auth.sh >/tmp/portal_auth_cron.log 2>&1"
 
-# Check update toutes les 30 minutes
-UPDATE_CRON="*/30 * * * * $INSTALL_SCRIPTS_DIR/check_update.sh >/tmp/portal_auth_check_update.log 2>&1"
+# Check update tous les jours à minuit
+UPDATE_CRON="0 0 * * * $INSTALL_SCRIPTS_DIR/check_update.sh >/tmp/portal_auth_check_update.log 2>&1"
 
 # Récupérer le cron existant et filtrer les anciennes entrées
 CURRENT_CRON="$(crontab -l 2>/dev/null || true)"
