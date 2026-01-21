@@ -29,6 +29,14 @@ STATE_FILE="/tmp/portal_auth_state"        # Fichier simple : ONLINE/OFFLINE
 STATUS_FILE="/tmp/portal_auth_status"      # Fichier détaillé : CODE|Message
 
 # ========================================
+# PLANIFICATION DES TÂCHES (cron)
+# ========================================
+# Modifier ces variables pour ajuster la fréquence des scripts.
+# Exemple : toutes les 5 minutes -> "*/5 * * * *"
+AUTH_CRON_SCHEDULE="* * * * *"            # Authentification automatique
+UPDATE_CRON_SCHEDULE="0 0 * * *"         # Vérification de mise à jour
+
+# ========================================
 # VERSION
 # ========================================
 LOCAL_VERSION_FILE="/etc/portal_auth_version"
@@ -49,3 +57,5 @@ export DISCORD_WEBHOOK
 export STATE_FILE
 export STATUS_FILE
 export PORTAL_AUTH_VERSION
+export AUTH_CRON_SCHEDULE
+export UPDATE_CRON_SCHEDULE

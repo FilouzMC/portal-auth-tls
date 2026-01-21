@@ -31,7 +31,7 @@ Le script d'installation va :
 - ✅ Installer `curl` si nécessaire (via opkg)
 - ✅ Télécharger et installer les scripts dans `/root/scripts/`
 - ✅ Créer le fichier de configuration `/root/scripts/portal_config.sh`
-- ✅ Configurer les tâches cron (auth 1min, update 30min)
+- ✅ Configurer les tâches cron (auth 1min, update 00h ➜ personnalisable)
 - ✅ Créer le fichier de version `/etc/portal_auth_version`
 
 ## ⚙️ Configuration
@@ -59,6 +59,10 @@ DISCORD_WEBHOOK="https://discord.com/api/webhooks/..."
 # Fichiers de statut (valeurs par défaut)
 STATE_FILE="/tmp/portal_auth_state"
 STATUS_FILE="/tmp/portal_auth_status"
+
+# Planification des crons (format standard cron)
+AUTH_CRON_SCHEDULE="* * * * *"      # Authentification/keep-alive
+UPDATE_CRON_SCHEDULE="0 0 * * *"    # Vérification des mises à jour
 ```
 
 **Important** : Le fichier de configuration est protégé (chmod 600) car il contient vos identifiants.
@@ -96,7 +100,7 @@ Le script `auth.sh` s'exécute **automatiquement toutes les minutes** via cron :
 
 ### Mises à jour automatiques
 
-Le script `check_update.sh` s'exécute **toutes les 30 minutes** :
+Par défaut, le script `check_update.sh` s'exécute **chaque nuit à 00h00** (valeur ajustable via `portal_config.sh`) :
 - Compare la version locale avec celle du dépôt GitHub
 - Si nouvelle version détectée → télécharge et lance `install.sh`
 - La configuration existante est **préservée** lors des mises à jour
