@@ -29,8 +29,6 @@ ARCHIVE_FILE="$WORK_DIR/repo.tar.gz"
 INSTALL_SCRIPTS_DIR="/root/scripts"
 CONFIG_FILE="$INSTALL_SCRIPTS_DIR/portal_config.sh"
 LOCAL_VERSION_FILE="/etc/portal_auth_version"
-DEFAULT_AUTH_CRON_SCHEDULE="* * * * *"
-DEFAULT_UPDATE_CRON_SCHEDULE="0 0 * * *"
 
 # ========================================
 # FONCTIONS UTILITAIRES
@@ -45,31 +43,6 @@ cleanup() {
 }
 
 trap cleanup EXIT
-
-ensure_config_entry() {
-    local FILE="$1"
-    local VAR="$2"
-    local VALUE="$3"
-
-    if ! grep -Eq "^[[:space:]]*$VAR=" "$FILE"; then
-        {
-            echo ""
-            echo "# Ajout automatique : $VAR"
-            echo "$VAR=\"$VALUE\""
-        } >> "$FILE"
-        log "Ajout du paramètre $VAR dans $FILE (valeur par défaut : $VALUE)."
-    fi
-}
-
-ensure_export_entry() {
-    local FILE="$1"
-    local VAR="$2"
-
-    if ! grep -Eq "^[[:space:]]*export[[:space:]]+$VAR([[:space:]]|$)" "$FILE"; then
-        echo "export $VAR" >> "$FILE"
-        log "Ajout de l'export pour $VAR dans $FILE."
-    fi
-}
 
 # ========================================
 # ÉTAPE 1 : TÉLÉCHARGEMENT DE L'ARCHIVE
@@ -160,31 +133,16 @@ else
     log "Config déjà présente, conservée : $CONFIG_FILE"
 fi
 
-ensure_config_entry "$CONFIG_FILE" "AUTH_CRON_SCHEDULE" "$DEFAULT_AUTH_CRON_SCHEDULE"
-ensure_config_entry "$CONFIG_FILE" "UPDATE_CRON_SCHEDULE" "$DEFAULT_UPDATE_CRON_SCHEDULE"
-ensure_export_entry "$CONFIG_FILE" "AUTH_CRON_SCHEDULE"
-ensure_export_entry "$CONFIG_FILE" "UPDATE_CRON_SCHEDULE"
-
 # ========================================
 # ÉTAPE 6 : CONFIGURATION DES TÂCHES CRON
 # ========================================
 log "Mise à jour des tâches cron..."
 
-AUTH_SCHEDULE="$DEFAULT_AUTH_CRON_SCHEDULE"
-UPDATE_SCHEDULE="$DEFAULT_UPDATE_CRON_SCHEDULE"
+# Auth toutes les 1 minute
+AUTH_CRON="* * * * * $INSTALL_SCRIPTS_DIR/auth.sh >/tmp/portal_auth_cron.log 2>&1"
 
-if [ -f "$CONFIG_FILE" ]; then
-    # shellcheck disable=SC1090
-    . "$CONFIG_FILE"
-    [ -n "$AUTH_CRON_SCHEDULE" ] && AUTH_SCHEDULE="$AUTH_CRON_SCHEDULE"
-    [ -n "$UPDATE_CRON_SCHEDULE" ] && UPDATE_SCHEDULE="$UPDATE_CRON_SCHEDULE"
-fi
-
-# Auth (programmation configurable via portal_config.sh)
-AUTH_CRON="$AUTH_SCHEDULE $INSTALL_SCRIPTS_DIR/auth.sh >/tmp/portal_auth_cron.log 2>&1"
-
-# Check update (programmation configurable via portal_config.sh)
-UPDATE_CRON="$UPDATE_SCHEDULE $INSTALL_SCRIPTS_DIR/check_update.sh >/tmp/portal_auth_check_update.log 2>&1"
+# Check update tous les jours à minuit
+UPDATE_CRON="0 0 * * * $INSTALL_SCRIPTS_DIR/check_update.sh >/tmp/portal_auth_check_update.log 2>&1"
 
 # Récupérer le cron existant et filtrer les anciennes entrées
 CURRENT_CRON="$(crontab -l 2>/dev/null || true)"
@@ -193,7 +151,7 @@ FILTERED_CRON="$(echo "$CURRENT_CRON" | grep -v "$INSTALL_SCRIPTS_DIR/auth.sh" |
 # Appliquer les nouvelles tâches
 printf "%s\n%s\n%s\n" "$FILTERED_CRON" "$AUTH_CRON" "$UPDATE_CRON" | sed '/^$/d' | crontab -
 
-log "Cron configuré : auth.sh ($AUTH_SCHEDULE) et check_update.sh ($UPDATE_SCHEDULE)"
+log "Cron configuré : auth.sh (1 min) et check_update.sh (30 min)"
 
 # ========================================
 # ÉTAPE 7 : MISE À JOUR DE LA VERSION
