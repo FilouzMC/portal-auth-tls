@@ -149,9 +149,9 @@ CURRENT_CRON="$(crontab -l 2>/dev/null || true)"
 FILTERED_CRON="$(echo "$CURRENT_CRON" | grep -v "$INSTALL_SCRIPTS_DIR/auth.sh" | grep -v "$INSTALL_SCRIPTS_DIR/check_update.sh" || true)"
 
 # Appliquer les nouvelles tâches
-printf "%s\n%s\n%s\n" "$FILTERED_CRON" "$AUTH_CRON" "$UPDATE_CRON" | sed '/^$/d' | crontab -
+printf "%s\n%s\n%s\n%s\n" "$FILTERED_CRON" "@reboot $INSTALL_SCRIPTS_DIR/auth.sh" "$AUTH_CRON" "$UPDATE_CRON" | sed '/^$/d' | crontab -
 
-log "Cron configuré : auth.sh (1 min) et check_update.sh (30 min)"
+log "Cron configuré : @reboot, auth.sh (1 min) et check_update.sh (30 min)"
 
 # ========================================
 # ÉTAPE 7 : MISE À JOUR DE LA VERSION

@@ -1,6 +1,7 @@
 # Portal Auth
 
 Système d'authentification automatique pour portail captif sur routeur OpenWrt.
+> ⚠️ Ce projet est à but éducatif uniquement
 
 ## 📋 Prérequis
 
@@ -31,7 +32,7 @@ Le script d'installation va :
 - ✅ Installer `curl` si nécessaire (via opkg)
 - ✅ Télécharger et installer les scripts dans `/root/scripts/`
 - ✅ Créer le fichier de configuration `/root/scripts/portal_config.sh`
-- ✅ Configurer les tâches cron (auth 1min, update 00h ➜ personnalisable)
+- ✅ Configurer les tâches cron
 - ✅ Créer le fichier de version `/etc/portal_auth_version`
 
 ## ⚙️ Configuration
