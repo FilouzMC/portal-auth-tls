@@ -1,10 +1,13 @@
+-- Copyright 2026
+-- Licensed to the public under the Apache License 2.0.
+
 module("luci.controller.portal_auth", package.seeall)
 
 function index()
-    entry({"admin", "services", "portal_auth"}, template("portal_auth"), _("Portal Auth"), 60)
-    entry({"admin", "services", "portal_auth", "auth"}, call("action_auth"))
-    entry({"admin", "services", "portal_auth", "logout"}, call("action_logout"))
-    entry({"admin", "services", "portal_auth", "check_update"}, call("action_check_update"))
+    entry({"admin", "services", "portal_auth"}, template("portal_auth"), _("Portal Auth"), 60).dependent = false
+    entry({"admin", "services", "portal_auth", "auth"}, call("action_auth")).leaf = true
+    entry({"admin", "services", "portal_auth", "logout"}, call("action_logout")).leaf = true
+    entry({"admin", "services", "portal_auth", "check_update"}, call("action_check_update")).leaf = true
 end
 
 function action_auth()
