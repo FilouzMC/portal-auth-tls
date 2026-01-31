@@ -121,33 +121,6 @@ chmod +x "$INSTALL_SCRIPTS_DIR"/*.sh
 log "Scripts installés : auth.sh, check_update.sh, logout.sh"
 
 # ========================================
-# ÉTAPE 4B : INSTALLATION DES FICHIERS LUCI
-# ========================================
-LUCI_CONTROLLER_DIR="/usr/lib/lua/luci/controller"
-LUCI_VIEW_DIR="/usr/lib/lua/luci/view"
-LUCI_CONTROLLER_SRC="$SRC_ROOT/luci/controller"
-LUCI_VIEW_SRC="$SRC_ROOT/luci/view"
-
-if [ -d "$LUCI_CONTROLLER_SRC" ] && [ -d "$LUCI_VIEW_SRC" ]; then
-    log "Installation de l'interface LuCI..."
-    
-    # Créer les répertoires si nécessaires
-    mkdir -p "$LUCI_CONTROLLER_DIR"
-    mkdir -p "$LUCI_VIEW_DIR"
-    
-    # Copier les fichiers LuCI
-    cp "$LUCI_CONTROLLER_SRC/portal_auth.lua" "$LUCI_CONTROLLER_DIR/"
-    cp "$LUCI_VIEW_SRC/portal_auth.htm" "$LUCI_VIEW_DIR/"
-    
-    # Vider le cache LuCI pour forcer le rechargement
-    rm -rf /tmp/luci-indexcache /tmp/luci-modulecache
-    
-    log "Interface LuCI installée : Services > Portal Auth"
-else
-    log "Fichiers LuCI non trouvés, interface web non installée."
-fi
-
-# ========================================
 # ÉTAPE 5 : CONFIGURATION
 # ========================================
 if [ ! -f "$CONFIG_FILE" ]; then
