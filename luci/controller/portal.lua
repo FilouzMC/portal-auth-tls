@@ -18,6 +18,8 @@ function index()
     entry({"admin", "services", "portal", "patch_logs"}, call("action_patch_logs"), nil).leaf = true
     entry({"admin", "services", "portal", "patch_upload"}, call("action_patch_upload"), nil).leaf = true
     entry({"admin", "services", "portal", "patch_delete"}, call("action_patch_delete"), nil).leaf = true
+    entry({"admin", "services", "portal", "export_logs"}, call("action_export_logs"), nil).leaf = true
+    entry({"admin", "services", "portal", "paste_logs"}, call("action_paste_logs"), nil).leaf = true
 end
 
 function action_index()
@@ -329,4 +331,42 @@ function action_patch_delete()
     
     http.prepare_content("application/json")
     http.write_json({ success = true, output = "Patch " .. patch_name .. " supprime" })
+end
+
+function action_export_logs()
+    local http = require "luci.http"
+    local util = require "luci.util"
+    
+    local logs = util.exec("logread 2>/dev/null") or ""
+    
+    if logs == "" then
+        logs = "Aucun log systeme trouve."
+    end
+    
+    http.prepare_content("application/json")
+    http.write_json({ success = true, logs = logs })
+end
+
+function action_paste_logs()
+    local http = require "luci.http"
+    local util = require "luci.util"
+    
+    local logs = util.exec("logread 2>/dev/null") or ""
+    
+    if logs == "" then
+        logs = "Aucun log systeme trouve."
+    end
+    
+    local paste_service = "https://paste.rs"
+    
+    local output = util.exec("echo '" .. logs:gsub("'", "'\\''") .. "' | curl -s -X POST -d @- " .. paste_service) or ""
+    
+    if output == "" or output:match("error") then
+        http.prepare_content("application/json")
+        http.write_json({ success = false, output = "Erreur lors de l'envoi au service de paste", url = "" })
+        return
+    end
+    
+    http.prepare_content("application/json")
+    http.write_json({ success = true, output = "Logs uploades", url = output:gsub("\n", "") })
 end

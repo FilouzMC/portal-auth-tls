@@ -93,6 +93,30 @@ BASE_URL, PORTAL_USER, PORTAL_PASS, etc.
 <button class="btn cbi-button" onclick="patch_close_logs()" style="margin-top:10px">Fermer</button>
 </div>
 
+<div class="cbi-section" style="margin-top:30px">
+<h3>Logs Systeme</h3>
+<p style="margin:0 0 15px 0;color:#666;font-size:13px">Exporte tous les logs du systeme (logread)</p>
+<button class="btn cbi-button" onclick="export_logs_local()" style="margin-right:10px">Exporter</button>
+<button class="btn cbi-button cbi-button-apply" onclick="export_logs_paste()">Partager via Paste</button>
+</div>
+
+<div id="logs-export-section" style="margin-top:15px;display:none">
+<h3>Logs exportes</h3>
+<textarea id="logs-export-text" style="width:100%;height:250px;font-family:monospace;font-size:11px;border:1px solid #ccc;padding:5px" readonly></textarea>
+<div style="margin-top:10px">
+<button class="btn cbi-button" onclick="download_logs()" style="margin-right:5px">Telecharger</button>
+<button class="btn cbi-button" onclick="copy_logs_to_clipboard()">Copier</button>
+</div>
+</div>
+
+<div id="logs-paste-section" style="margin-top:15px;display:none">
+<h3>Lien de partage</h3>
+<p style="margin:0 0 10px 0;color:#ff6600;font-size:12px;font-weight:bold">⚠️ Ces logs sont publics et accessibles via le lien ci-dessous</p>
+<p style="margin:0 0 10px 0;color:#666;font-size:12px">Cliquez sur le lien ou copiez-le:</p>
+<input type="text" id="logs-paste-url" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:5px;font-family:monospace;font-size:12px;box-sizing:border-box" readonly>
+<button class="btn cbi-button" onclick="copy_paste_url()" style="margin-top:10px">Copier le lien</button>
+</div>
+
 </div>
 
 <script type="text/javascript">
@@ -445,6 +469,84 @@ function patch_delete(name) {
     }
   };
   xhr.send('patch=' + encodeURIComponent(name));
+}
+
+// Logs export
+function export_logs_local() {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '<%=url("admin/services/portal/export_logs")%>', true);
+  xhr.onload = function() {
+    if (xhr.status === 200) {
+      try {
+        var resp = JSON.parse(xhr.responseText);
+        if (resp.success) {
+          document.getElementById('logs-export-text').value = resp.logs;
+          document.getElementById('logs-export-section').style.display = 'block';
+          document.getElementById('logs-paste-section').style.display = 'none';
+        } else {
+          alert('Erreur export logs');
+        }
+      } catch (e) {
+        alert('Erreur parse: ' + e);
+      }
+    } else {
+      alert('HTTP ' + xhr.status);
+    }
+  };
+  xhr.send();
+}
+
+function export_logs_paste() {
+  if (!confirm('ATTENTION: Ceci va partager TOUS les logs systeme sur Internet (paste.rs).\n\nLes donnees seront publiques et accessibles via un lien.\n\nEtes-vous sur de vouloir continuer ?')) {
+    return;
+  }
+  
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', '<%=url("admin/services/portal/paste_logs")%>', true);
+  xhr.onload = function() {
+    if (xhr.status === 200) {
+      try {
+        var resp = JSON.parse(xhr.responseText);
+        if (resp.success && resp.url) {
+          document.getElementById('logs-paste-url').value = resp.url;
+          document.getElementById('logs-paste-section').style.display = 'block';
+          document.getElementById('logs-export-section').style.display = 'none';
+        } else {
+          alert('Erreur partage logs');
+        }
+      } catch (e) {
+        alert('Erreur parse: ' + e);
+      }
+    } else {
+      alert('HTTP ' + xhr.status);
+    }
+  };
+  xhr.send();
+}
+
+function copy_logs_to_clipboard() {
+  var textarea = document.getElementById('logs-export-text');
+  textarea.select();
+  document.execCommand('copy');
+  alert('Logs copies !');
+}
+
+function copy_paste_url() {
+  var input = document.getElementById('logs-paste-url');
+  input.select();
+  document.execCommand('copy');
+  alert('Lien copie !');
+}
+
+function download_logs() {
+  var logs = document.getElementById('logs-export-text').value;
+  var blob = new Blob([logs], {type: 'text/plain'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'portal-logs-' + new Date().getTime() + '.txt';
+  a.click();
+  URL.revokeObjectURL(url);
 }
 </script>
 <%+footer%>
