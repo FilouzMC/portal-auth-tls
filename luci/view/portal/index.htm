@@ -1,48 +1,149 @@
 <%+header%>
 <div class="cbi-map">
-<h2>Portail Captif</h2>
-<p>Exécutez les scripts directement.</p>
+<h2>Portal Captif</h2>
+
+<div class="cbi-section" id="status-section">
+<h3>Statut</h3>
+<table class="table" style="width:100%">
+<tr>
+<td style="width:30%;font-weight:bold">Etat:</td>
+<td id="state-val" style="color:#999">En attente...</td>
+</tr>
+<tr>
+<td style="font-weight:bold">Statut:</td>
+<td id="status-val" style="color:#999">En attente...</td>
+</tr>
+</table>
+<button class="btn cbi-button" onclick="load_status()" style="margin-top:10px">Rafraichir</button>
+</div>
+
 <div class="cbi-section">
-<button class="btn cbi-button" onclick="portal_run('auth')">Auth</button>
-<button class="btn cbi-button" onclick="portal_run('logout')">Logout</button>
-<button class="btn cbi-button" onclick="portal_run('update')">Update</button>
+<h3>Actions</h3>
+<button class="btn cbi-button" onclick="portal_run('auth')">Authentifier</button>
+<button class="btn cbi-button" onclick="portal_run('logout')">Deconnecter</button>
+<button class="btn cbi-button" onclick="portal_run('update')">Maj</button>
 </div>
-<div id="portal_output_area" style="margin-top:15px;display:none;">
-<textarea id="portal_output_text" style="width:100%;height:250px;font-family:monospace;font-size:12px" readonly></textarea>
+
+<div id="run-output-section" style="margin-top:15px;display:none">
+<h3>Resultat</h3>
+<textarea id="run-output-text" style="width:100%;height:180px;font-family:monospace;font-size:11px;border:1px solid #ccc;padding:5px" readonly></textarea>
+</div>
+
+<div class="cbi-section">
+<h3>Configuration</h3>
+<button class="btn cbi-button" onclick="load_config()">Charger</button>
+<button class="btn cbi-button cbi-button-apply" onclick="save_config()" style="margin-left:5px">Sauvegarder</button>
+</div>
+
+<div id="config-section" style="margin-top:10px;display:none">
+<textarea id="config-text" style="width:100%;height:200px;font-family:monospace;font-size:11px;border:1px solid #ccc;padding:5px"></textarea>
+<div style="margin-top:10px;color:#999;font-size:11px">
+BASE_URL, PORTAL_USER, PORTAL_PASS, etc.
 </div>
 </div>
+
+</div>
+
 <script type="text/javascript">
-function portal_run(script_name) {
-  var ta = document.getElementById('portal_output_text');
-  var area = document.getElementById('portal_output_area');
-  if (!ta || !area) return;
-  
-  ta.value = 'Execution de ' + script_name + ' en cours...';
-  area.style.display = 'block';
-  
+function load_status() {
   var xhr = new XMLHttpRequest();
-  xhr.open('POST', '<%=url("admin/system/portal/run")%>', true);
-  xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-  
+  xhr.open('GET', '<%=url("admin/services/portal/status")%>', true);
   xhr.onload = function() {
     if (xhr.status === 200) {
       try {
-        var response = JSON.parse(xhr.responseText);
-        ta.value = 'Status: ' + (response.success ? 'OK' : 'FAIL') + '\n';
-        ta.value += response.output;
+        var resp = JSON.parse(xhr.responseText);
+        var state_el = document.getElementById('state-val');
+        var status_el = document.getElementById('status-val');
+        if (state_el) state_el.textContent = resp.state || 'UNKNOWN';
+        if (status_el) status_el.textContent = resp.status || 'N/A';
       } catch (e) {
-        ta.value = 'Erreur parse JSON: ' + e.toString();
+        var el = document.getElementById('status-val');
+        if (el) el.textContent = 'Erreur parse';
       }
-    } else {
-      ta.value = 'HTTP Error ' + xhr.status;
     }
   };
-  
-  xhr.onerror = function() {
-    ta.value = 'Erreur reseau';
-  };
-  
-  xhr.send('script=' + encodeURIComponent(script_name));
+  xhr.send();
 }
+
+function portal_run(name) {
+  var ta = document.getElementById('run-output-text');
+  var sec = document.getElementById('run-output-section');
+  if (!ta || !sec) return;
+  
+  ta.value = 'En cours...';
+  sec.style.display = 'block';
+  
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', '<%=url("admin/services/portal/run")%>', true);
+  xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+  xhr.onload = function() {
+    if (xhr.status === 200) {
+      try {
+        var resp = JSON.parse(xhr.responseText);
+        ta.value = (resp.success ? '[OK]' : '[FAIL]') + '\n' + (resp.output || '');
+      } catch (e) {
+        ta.value = 'Erreur: ' + e.toString();
+      }
+    } else {
+      ta.value = 'HTTP ' + xhr.status;
+    }
+  };
+  xhr.send('script=' + encodeURIComponent(name));
+}
+
+function load_config() {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '<%=url("admin/services/portal/config_get")%>', true);
+  xhr.onload = function() {
+    if (xhr.status === 200) {
+      try {
+        var resp = JSON.parse(xhr.responseText);
+        var ta = document.getElementById('config-text');
+        var sec = document.getElementById('config-section');
+        if (ta && sec) {
+          ta.value = resp.content || '';
+          sec.style.display = 'block';
+        }
+      } catch (e) {
+        alert('Erreur chargement config: ' + e);
+      }
+    } else {
+      alert('Erreur HTTP ' + xhr.status);
+    }
+  };
+  xhr.send();
+}
+
+function save_config() {
+  var ta = document.getElementById('config-text');
+  if (!ta) return;
+  
+  var content = ta.value;
+  if (!content.trim()) {
+    alert('Config vide!');
+    return;
+  }
+  
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', '<%=url("admin/services/portal/config_set")%>', true);
+  xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+  xhr.onload = function() {
+    if (xhr.status === 200) {
+      try {
+        var resp = JSON.parse(xhr.responseText);
+        alert(resp.success ? 'Sauvegardee' : 'Erreur: ' + resp.output);
+      } catch (e) {
+        alert('Erreur parse: ' + e);
+      }
+    } else {
+      alert('HTTP ' + xhr.status);
+    }
+  };
+  xhr.send('content=' + encodeURIComponent(content));
+}
+
+window.addEventListener('load', function() {
+  load_status();
+});
 </script>
 <%+footer%>
