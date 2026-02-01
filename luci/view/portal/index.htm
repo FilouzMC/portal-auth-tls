@@ -27,7 +27,7 @@ function runScript(name, btn) {
   btn.innerHTML = '⏳ Exécution...';
 
   outputBox.classList.remove('hidden');
-  textarea.value = 'Exécution du script "' + name + '"...\n';
+  textarea.value = 'Exécution du script "' + name + '"...\\n';
 
   var xhr = new XMLHttpRequest();
   xhr.open('POST', '<%=url("admin/system/portal/run")%>', true);
@@ -41,15 +41,15 @@ function runScript(name, btn) {
         try {
           var json = JSON.parse(xhr.responseText);
           if (json.success) {
-            textarea.value += '\n✅ Script terminé:\n\n' + json.output;
+            textarea.value += '\\n✅ Script terminé:\\n\\n' + json.output;
           } else {
-            textarea.value += '\n❌ Erreur: ' + json.output;
+            textarea.value += '\\n❌ Erreur: ' + json.output;
           }
         } catch (e) {
-          textarea.value += '\n❌ Réponse invalide: ' + e;
+          textarea.value += '\\n❌ Réponse invalide: ' + e;
         }
       } else {
-        textarea.value += '\n❌ Erreur HTTP ' + xhr.status;
+        textarea.value += '\\n❌ Erreur HTTP ' + xhr.status;
       }
     }
   };
