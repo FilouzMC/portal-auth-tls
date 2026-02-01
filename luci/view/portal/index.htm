@@ -1,0 +1,60 @@
+<%+header%>
+
+<div class="cbi-map">
+  <h2>Portail Captif - Actions rapides</h2>
+  <p>Exécutez les scripts sans utiliser SSH.</p>
+
+  <div class="cbi-section">
+    <button class="btn cbi-button cbi-button-apply" onclick="runScript('auth', this)">🚀 Script d'authentification</button>
+    <button class="btn cbi-button cbi-button-reset" onclick="runScript('logout', this)">🔴 Script de déconnexion</button>
+    <button class="btn cbi-button" onclick="runScript('update', this)">🔄 Vérifier les mises à jour</button>
+  </div>
+
+  <div id="output" class="cbi-section hidden">
+    <label>Résultat :</label>
+    <textarea style="width:100%;height:200px" readonly></textarea>
+  </div>
+</div>
+
+<script type="text/javascript">
+function runScript(name, btn) {
+  var outputBox = document.getElementById('output');
+  var textarea = outputBox.querySelector('textarea');
+  var buttons = document.querySelectorAll('button');
+
+  buttons.forEach(function(b) { b.disabled = true; });
+  var oldText = btn.innerHTML;
+  btn.innerHTML = '⏳ Exécution...';
+
+  outputBox.classList.remove('hidden');
+  textarea.value = 'Exécution du script "' + name + '"...\n';
+
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', '<%=url("admin/system/portal/run")%>', true);
+  xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4) {
+      buttons.forEach(function(b) { b.disabled = false; });
+      btn.innerHTML = oldText;
+
+      if (xhr.status === 200) {
+        try {
+          var json = JSON.parse(xhr.responseText);
+          if (json.success) {
+            textarea.value += '\n✅ Script terminé:\n\n' + json.output;
+          } else {
+            textarea.value += '\n❌ Erreur: ' + json.output;
+          }
+        } catch (e) {
+          textarea.value += '\n❌ Réponse invalide: ' + e;
+        }
+      } else {
+        textarea.value += '\n❌ Erreur HTTP ' + xhr.status;
+      }
+    }
+  };
+  xhr.send('script=' + encodeURIComponent(name));
+}
+</script>
+
+<%+footer%>

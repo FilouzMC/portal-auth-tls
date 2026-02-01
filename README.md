@@ -39,8 +39,13 @@ Le script d'installation va :
 - ✅ Créer un fichier de configuration template `/root/scripts/portal_config.sh` (si absent)
 - ✅ Configurer les tâches cron pour l'authentification automatique
 - ✅ Créer le fichier de version `/etc/portal_auth_version`
+- ✅ Installer l'interface LuCI (accès web via Système > Portail Captif)
 
 **Note** : Après l'installation, vous devez éditer le fichier `/root/scripts/portal_config.sh` pour y saisir vos identifiants (voir section Configuration ci-dessous).
+
+## 🌐 Interface LuCI
+
+Une interface web minimaliste est ajoutée automatiquement dans LuCI afin de piloter les scripts sans passer par SSH.
 
 ## ⚙️ Configuration
 

@@ -154,7 +154,23 @@ printf "%s\n%s\n%s\n%s\n" "$FILTERED_CRON" "@reboot $INSTALL_SCRIPTS_DIR/auth.sh
 log "Cron configuré : @reboot, auth.sh (1 min) et check_update.sh (30 min)"
 
 # ========================================
-# ÉTAPE 7 : MISE À JOUR DE LA VERSION
+# ÉTAPE 7 : INSTALLATION INTERFACE LUCI
+# ========================================
+LUCI_INSTALLER="$SRC_ROOT/install_luci.sh"
+if [ -f "$LUCI_INSTALLER" ]; then
+    log "Installation de l'interface LuCI..."
+    chmod +x "$LUCI_INSTALLER"
+    if sh "$LUCI_INSTALLER" "$SRC_ROOT"; then
+        log "Interface LuCI installée avec succès."
+    else
+        log "⚠️  Échec de l'installation LuCI (non bloquant)."
+    fi
+else
+    log "Installeur LuCI introuvable, étape ignorée."
+fi
+
+# ========================================
+# ÉTAPE 8 : MISE À JOUR DE LA VERSION
 # ========================================
 VERSION_VALUE="dev"
 if [ -n "$NEW_VERSION" ]; then
