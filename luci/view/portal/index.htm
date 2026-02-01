@@ -1,72 +1,70 @@
 <%+header%>
-<div class="cbi-map" style="max-width:1000px;margin:0 auto">
-<h2 style="margin-bottom:30px">Portal Captif</h2>
+<div class="cbi-map">
+<h2>Portal Captif</h2>
 
-<div class="cbi-section" id="status-section" style="margin-bottom:30px">
-<h3 style="margin-top:0;margin-bottom:15px">Statut</h3>
-<table class="table" style="width:100%;margin-bottom:15px">
+<div class="cbi-section" id="status-section">
+<h3>Statut</h3>
+<table class="table" style="width:100%">
 <tr>
-<td style="width:30%;font-weight:bold;padding:8px">Etat:</td>
-<td id="state-val" style="color:#999;padding:8px">En attente...</td>
+<td style="width:30%;font-weight:bold">Etat:</td>
+<td id="state-val" style="color:#999">En attente...</td>
 </tr>
 <tr>
-<td style="font-weight:bold;padding:8px">Statut:</td>
-<td id="status-val" style="color:#999;padding:8px">En attente...</td>
+<td style="font-weight:bold">Statut:</td>
+<td id="status-val" style="color:#999">En attente...</td>
 </tr>
 </table>
 <button class="btn cbi-button" onclick="load_status()" style="margin-top:10px">Rafraichir</button>
 </div>
 
-<div class="cbi-section" style="margin-bottom:30px">
-<h3 style="margin-top:0;margin-bottom:15px">Actions</h3>
-<button class="btn cbi-button" onclick="portal_run('auth')" style="margin-right:10px">Authentifier</button>
-<button class="btn cbi-button" onclick="portal_run('logout')" style="margin-right:10px">Deconnecter</button>
+<div class="cbi-section">
+<h3>Actions</h3>
+<button class="btn cbi-button" onclick="portal_run('auth')">Authentifier</button>
+<button class="btn cbi-button" onclick="portal_run('logout')">Deconnecter</button>
 <button class="btn cbi-button" onclick="portal_run('update')">Maj</button>
 </div>
 
-<div id="run-output-section" style="margin-bottom:30px;display:none">
-<h3 style="margin-top:0;margin-bottom:12px">Resultat</h3>
-<textarea id="run-output-text" style="width:100%;height:180px;font-family:monospace;font-size:11px;border:1px solid #ccc;padding:10px;box-sizing:border-box" readonly></textarea>
+<div id="run-output-section" style="margin-top:15px;display:none">
+<h3>Resultat</h3>
+<textarea id="run-output-text" style="width:100%;height:180px;font-family:monospace;font-size:11px;border:1px solid #ccc;padding:5px" readonly></textarea>
 </div>
 
-<div class="cbi-section" style="margin-bottom:30px">
-<h3 style="margin-top:0;margin-bottom:15px">Configuration</h3>
-<button class="btn cbi-button" onclick="load_config()" style="margin-right:10px">Charger</button>
-<button class="btn cbi-button cbi-button-apply" onclick="save_config()">Sauvegarder</button>
+<div class="cbi-section">
+<h3>Configuration</h3>
+<button class="btn cbi-button" onclick="load_config()">Charger</button>
+<button class="btn cbi-button cbi-button-apply" onclick="save_config()" style="margin-left:5px">Sauvegarder</button>
 </div>
 
-<div id="config-section" style="margin-bottom:30px;display:none">
-<textarea id="config-text" style="width:100%;height:200px;font-family:monospace;font-size:11px;border:1px solid #ccc;padding:10px;box-sizing:border-box;margin-bottom:10px"></textarea>
-<div style="color:#999;font-size:11px">
+<div id="config-section" style="margin-top:10px;display:none">
+<textarea id="config-text" style="width:100%;height:200px;font-family:monospace;font-size:11px;border:1px solid #ccc;padding:5px"></textarea>
+<div style="margin-top:10px;color:#999;font-size:11px">
 BASE_URL, PORTAL_USER, PORTAL_PASS, etc.
 </div>
 </div>
 
-<div class="cbi-section" style="margin-bottom:30px">
-<h3 style="margin-top:0;margin-bottom:15px">Patches</h3>
-<button class="btn cbi-button" onclick="load_patches()">Rafraichir liste</button>
+<div class="cbi-section">
+<h3>Patches</h3>
+<button class="btn cbi-button" onclick="load_patches()">Rafraichir</button>
 </div>
 
-<div class="cbi-section" style="margin-bottom:30px">
-<h3 style="margin-top:0;margin-bottom:15px">Upload Patch</h3>
-<div id="upload-area" style="border:2px dashed #999;border-radius:8px;padding:30px;text-align:center;background:#f9f9f9;cursor:pointer" ondrop="handle_drop(event)" ondragover="handle_dragover(event)" ondragleave="handle_dragleave(event)">
+<div class="cbi-section">
+<h3>Upload Patch</h3>
+<div id="upload-area" style="border:2px dashed #999;border-radius:5px;padding:20px;text-align:center;background:#f9f9f9;cursor:pointer" ondrop="handle_drop(event)" ondragover="handle_dragover(event)" ondragleave="handle_dragleave(event)">
 <input type="file" id="upload-input" style="display:none" accept=".sh" onchange="handle_file_select(event)">
-<p style="margin:0;color:#666;font-size:14px;font-weight:bold">Glissez-deposez un fichier .sh</p>
-<p style="margin:8px 0 0 0;font-size:12px;color:#999">ou cliquez pour parcourir</p>
-<p style="margin:10px 0 0 0;font-size:11px;color:#999;padding-top:10px;border-top:1px solid #ddd">Nom doit contenir 'patch' et finir par .sh</p>
+<p style="margin:0;color:#666">Glissez-deposez un fichier .sh (contenant 'patch') ou cliquez</p>
+<p style="margin:5px 0 0 0;font-size:12px;color:#999" id="upload-hint">Nom doit contenir 'patch' et finir par .sh</p>
 </div>
-<div id="upload-status" style="margin-top:15px;display:none">
-<textarea id="upload-status-text" style="width:100%;height:100px;font-family:monospace;font-size:11px;border:1px solid #ccc;padding:10px;box-sizing:border-box" readonly></textarea>
+<div id="upload-status" style="margin-top:10px;display:none">
+<textarea id="upload-status-text" style="width:100%;height:100px;font-family:monospace;font-size:11px;border:1px solid #ccc;padding:5px" readonly></textarea>
 </div>
 </div>
 
-<div id="patches-list-section" style="margin-bottom:30px;display:none">
-<h3 style="margin-top:0;margin-bottom:15px">Liste des Patches</h3>
-<table id="patches-table" style="width:100%;border-collapse:collapse;border:1px solid #ddd;border-radius:5px;overflow:hidden">
+<div id="patches-list-section" style="margin-top:10px;display:none">
+<table id="patches-table" style="width:100%;border-collapse:collapse">
 <thead>
-<tr style="background:#f5f5f5;border-bottom:2px solid #ccc">
-<th style="text-align:left;padding:12px;font-weight:bold">Patch</th>
-<th style="text-align:center;width:150px;font-weight:bold">Actions</th>
+<tr style="border-bottom:1px solid #ccc">
+<th style="text-align:left;padding:5px">Patch</th>
+<th style="text-align:center;width:150px">Action</th>
 </tr>
 </thead>
 <tbody id="patches-tbody">
@@ -74,25 +72,25 @@ BASE_URL, PORTAL_USER, PORTAL_PASS, etc.
 </table>
 </div>
 
-<div id="patch-run-section" style="margin-bottom:30px;display:none">
-<h3 style="margin-top:0;margin-bottom:12px">Resultat du patch</h3>
-<textarea id="patch-run-text" style="width:100%;height:150px;font-family:monospace;font-size:11px;border:1px solid #ccc;padding:10px;box-sizing:border-box" readonly></textarea>
+<div id="patch-run-section" style="margin-top:15px;display:none">
+<h4>Resultat du patch</h4>
+<textarea id="patch-run-text" style="width:100%;height:150px;font-family:monospace;font-size:11px;border:1px solid #ccc;padding:5px" readonly></textarea>
 </div>
 
-<div id="patch-view-section" style="margin-bottom:30px;display:none">
-<h3 style="margin-top:0;margin-bottom:12px">Code du patch</h3>
-<textarea id="patch-view-text" style="width:100%;height:200px;font-family:monospace;font-size:11px;border:1px solid #ccc;padding:10px;box-sizing:border-box;margin-bottom:15px" readonly></textarea>
-<div style="display:flex;gap:10px">
-<button class="btn cbi-button" onclick="patch_download_file()">Telecharger</button>
-<button class="btn cbi-button" onclick="patch_view_logs()">Voir logs</button>
+<div id="patch-view-section" style="margin-top:15px;display:none">
+<h4>Code du patch</h4>
+<textarea id="patch-view-text" style="width:100%;height:200px;font-family:monospace;font-size:10px;border:1px solid #ccc;padding:5px" readonly></textarea>
+<div style="margin-top:10px">
+<button class="btn cbi-button" onclick="patch_download_file()" style="margin-right:5px">Telecharger</button>
+<button class="btn cbi-button" onclick="patch_view_logs()" style="margin-right:5px">Voir logs</button>
 <button class="btn cbi-button" onclick="patch_close_view()">Fermer</button>
 </div>
 </div>
 
-<div id="patch-logs-section" style="margin-bottom:30px;display:none">
-<h3 style="margin-top:0;margin-bottom:12px">Historique du patch</h3>
-<textarea id="patch-logs-text" style="width:100%;height:250px;font-family:monospace;font-size:11px;border:1px solid #ccc;padding:10px;box-sizing:border-box;margin-bottom:15px" readonly></textarea>
-<button class="btn cbi-button" onclick="patch_close_logs()">Fermer</button>
+<div id="patch-logs-section" style="margin-top:15px;display:none">
+<h4>Historique du patch</h4>
+<textarea id="patch-logs-text" style="width:100%;height:250px;font-family:monospace;font-size:10px;border:1px solid #ccc;padding:5px" readonly></textarea>
+<button class="btn cbi-button" onclick="patch_close_logs()" style="margin-top:10px">Fermer</button>
 </div>
 
 </div>
@@ -299,10 +297,9 @@ function load_patches() {
             } else {
               for (var i = 0; i < resp.patches.length; i++) {
                 var p = resp.patches[i];
-                var row = '<tr style="border-bottom:1px solid #ddd"><td style="padding:12px">' + p.name + '</td>';
-                row += '<td style="text-align:center;padding:10px"><button class="btn cbi-button cbi-button-apply" onclick="patch_run_action(\'' + p.name + '\')" style="padding:5px 12px;font-size:12px;margin-right:5px">RUN</button> ';
-                row += '<button class="btn cbi-button" onclick="patch_view_code(\'' + p.name + '\')" style="padding:5px 12px;font-size:12px;margin-right:5px">VIEW</button> ';
-                row += '<button class="btn cbi-button cbi-button-reset" onclick="patch_delete_confirm(\'' + p.name + '\')" style="padding:5px 12px;font-size:12px">DEL</button></td></tr>';
+                var row = '<tr style="border-bottom:1px solid #ddd"><td style="padding:8px">' + p.name + '</td>';
+                row += '<td style="text-align:center"><button class="btn cbi-button cbi-button-apply" onclick="patch_run_action(\'' + p.name + '\')" style="padding:3px 8px;font-size:11px">RUN</button> ';
+                row += '<button class="btn cbi-button" onclick="patch_view_code(\'' + p.name + '\')" style="padding:3px 8px;font-size:11px">VIEW</button></td></tr>';
                 tbody.innerHTML += row;
               }
             }
@@ -418,35 +415,6 @@ function patch_close_view() {
 
 function patch_close_logs() {
   document.getElementById('patch-logs-section').style.display = 'none';
-}
-
-function patch_delete_confirm(name) {
-  if (!confirm('Etes-vous sur de vouloir supprimer ' + name + ' ?\nLe fichier et son historique seront effaces mais pas les actions du patch sur votre systeme.')) {
-    return;
-  }
-  patch_delete(name);
-}
-
-function patch_delete(name) {
-  var xhr = new XMLHttpRequest();
-  xhr.open('POST', '<%=url("admin/services/portal/patch_delete")%>', true);
-  xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-  xhr.onload = function() {
-    if (xhr.status === 200) {
-      try {
-        var resp = JSON.parse(xhr.responseText);
-        alert(resp.success ? 'Supprime' : 'Erreur: ' + resp.output);
-        if (resp.success) {
-          load_patches();
-        }
-      } catch (e) {
-        alert('Erreur parse: ' + e);
-      }
-    } else {
-      alert('HTTP ' + xhr.status);
-    }
-  };
-  xhr.send('patch=' + encodeURIComponent(name));
 }
 </script>
 <%+footer%>
