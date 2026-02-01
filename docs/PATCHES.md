@@ -10,13 +10,13 @@ Un patch est un simple script shell `.sh` avec :
 - **Nom** : DOIT contenir le mot `patch` (ex: `patch_custom_network.sh`)
 - **Extension** : `.sh` obligatoire
 - **Contenu** : Commandes shell standard
-- ⚠️ **Ne pas exécuter n'importe pas !**
+- ⚠️ **Ne pas exécuter n'importe quoi !**
 
 ## Déployer un patch
 
 ### Via LuCI (Graphique)
 
-1. Allez dans **Système > Services > Portail Captif**
+1. Allez dans **Services > Portail Captif**
 2. Section **Upload Patch**
 3. Glissez-déposez votre fichier `.sh` OU cliquez pour sélectionner
 4. Le fichier est uploadé automatiquement
