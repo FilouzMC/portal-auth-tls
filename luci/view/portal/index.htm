@@ -5,56 +5,92 @@
   <p>Exécutez les scripts sans utiliser SSH.</p>
 
   <div class="cbi-section">
-    <button class="btn cbi-button cbi-button-apply" onclick="runScript('auth', this)">🚀 Script d'authentification</button>
-    <button class="btn cbi-button cbi-button-reset" onclick="runScript('logout', this)">🔴 Script de déconnexion</button>
-    <button class="btn cbi-button" onclick="runScript('update', this)">🔄 Vérifier les mises à jour</button>
+    <button class="btn cbi-button cbi-button-apply" onclick="portalRunScript('auth', this)">Script d'authentification</button>
+    <button class="btn cbi-button cbi-button-reset" onclick="portalRunScript('logout', this)">Script de déconnexion</button>
+    <button class="btn cbi-button" onclick="portalRunScript('update', this)">Vérifier les mises à jour</button>
   </div>
 
-  <div id="output" class="cbi-section hidden">
+  <div id="portal-output-box" class="cbi-section hidden">
     <label>Résultat :</label>
-    <textarea style="width:100%;height:200px" readonly></textarea>
+    <textarea id="portal-output" style="width:100%;height:220px" readonly></textarea>
   </div>
 </div>
 
 <script type="text/javascript">
-function runScript(name, btn) {
-  var outputBox = document.getElementById('output');
-  var textarea = outputBox.querySelector('textarea');
-  var buttons = document.querySelectorAll('button');
+(function() {
+  function enableButtons(state) {
+    var buttons = document.querySelectorAll('.cbi-section button');
+    for (var i = 0; i < buttons.length; i++) {
+      buttons[i].disabled = !state;
+    }
+  }
 
-  buttons.forEach(function(b) { b.disabled = true; });
-  var oldText = btn.innerHTML;
-  btn.innerHTML = '⏳ Exécution...';
+  function appendLine(textarea, text) {
+    if (textarea.value.length > 0) {
+      textarea.value += String.fromCharCode(10);
+    }
+    textarea.value += text;
+  }
 
-  outputBox.classList.remove('hidden');
-  textarea.value = 'Exécution du script "' + name + '"...\\n';
+  window.portalRunScript = function(name, button) {
+    var outputBox = document.getElementById('portal-output-box');
+    var textarea = document.getElementById('portal-output');
+    if (!textarea || !outputBox) {
+      return;
+    }
 
-  var xhr = new XMLHttpRequest();
-  xhr.open('POST', '<%=url("admin/system/portal/run")%>', true);
-  xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
-      buttons.forEach(function(b) { b.disabled = false; });
-      btn.innerHTML = oldText;
+    outputBox.classList.remove('hidden');
+    textarea.value = '';
+    appendLine(textarea, 'Exécution du script "' + name + '" en cours...');
+
+    enableButtons(false);
+    var previousLabel = button.innerHTML;
+    button.innerHTML = 'Exécution...';
+
+    var xhr = new XMLHttpRequest();
+  xhr.open('POST', "<%=url(\"admin/system/portal/run\")%>", true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+
+    xhr.onreadystatechange = function() {
+      if (xhr.readyState !== 4) {
+        return;
+      }
+
+      enableButtons(true);
+      button.innerHTML = previousLabel;
 
       if (xhr.status === 200) {
+        var json;
         try {
-          var json = JSON.parse(xhr.responseText);
-          if (json.success) {
-            textarea.value += '\\n✅ Script terminé:\\n\\n' + json.output;
-          } else {
-            textarea.value += '\\n❌ Erreur: ' + json.output;
+          json = JSON.parse(xhr.responseText);
+        } catch (err) {
+          appendLine(textarea, 'Réponse illisible : ' + err);
+          return;
+        }
+
+        if (json.success) {
+          appendLine(textarea, 'Script terminé avec succès.');
+          if (json.output) {
+            appendLine(textarea, '--- Sortie ---');
+            appendLine(textarea, json.output);
           }
-        } catch (e) {
-          textarea.value += '\\n❌ Réponse invalide: ' + e;
+        } else {
+          appendLine(textarea, 'Erreur : ' + (json.output || 'inconnue'));
         }
       } else {
-        textarea.value += '\\n❌ Erreur HTTP ' + xhr.status;
+        appendLine(textarea, 'Erreur HTTP ' + xhr.status);
       }
-    }
+    };
+
+    xhr.onerror = function() {
+      enableButtons(true);
+      button.innerHTML = previousLabel;
+  appendLine(textarea, "Erreur réseau pendant l'appel AJAX.");
+    };
+
+    xhr.send('script=' + encodeURIComponent(name));
   };
-  xhr.send('script=' + encodeURIComponent(name));
-}
+})();
 </script>
 
 <%+footer%>
