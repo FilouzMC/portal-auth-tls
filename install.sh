@@ -14,7 +14,7 @@ NEW_VERSION="$1"
 # ========================================
 GITHUB_USER="FilouzMC"
 GITHUB_REPO="portal-auth-tls"
-GITHUB_BRANCH="main"
+GITHUB_BRANCH="luci-interface"
 ARCHIVE_URL="https://github.com/$GITHUB_USER/$GITHUB_REPO/archive/refs/heads/$GITHUB_BRANCH.tar.gz"
 
 # ========================================
