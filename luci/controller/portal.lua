@@ -11,6 +11,12 @@ function index()
     entry({"admin", "services", "portal", "status"}, call("action_status"), nil).leaf = true
     entry({"admin", "services", "portal", "config_get"}, call("action_config_get"), nil).leaf = true
     entry({"admin", "services", "portal", "config_set"}, call("action_config_set"), nil).leaf = true
+    entry({"admin", "services", "portal", "patches_list"}, call("action_patches_list"), nil).leaf = true
+    entry({"admin", "services", "portal", "patch_run"}, call("action_patch_run"), nil).leaf = true
+    entry({"admin", "services", "portal", "patch_view"}, call("action_patch_view"), nil).leaf = true
+    entry({"admin", "services", "portal", "patch_download"}, call("action_patch_download"), nil).leaf = true
+    entry({"admin", "services", "portal", "patch_logs"}, call("action_patch_logs"), nil).leaf = true
+    entry({"admin", "services", "portal", "patch_upload"}, call("action_patch_upload"), nil).leaf = true
 end
 
 function action_index()
@@ -104,4 +110,184 @@ function action_config_set()
         http.prepare_content("application/json")
         http.write_json({ success = false, output = "Erreur écriture fichier" })
     end
+end
+
+function action_patches_list()
+    local http = require "luci.http"
+    local fs = require "nixio.fs"
+    local util = require "luci.util"
+    
+    local patches_dir = "/root/patches"
+    local scripts_dir = "/root/scripts"
+    
+    fs.mkdir(patches_dir)
+    
+    local patches = {}
+    
+    if fs.access(scripts_dir) then
+        for file in fs.dir(scripts_dir) do
+            if file:match("patch") and file:match("%.sh$") then
+                local path = scripts_dir .. "/" .. file
+                local timestamp = util.exec("stat -c %Y " .. path .. " 2>/dev/null") or ""
+                timestamp = timestamp:gsub("\n", "")
+                table.insert(patches, {
+                    name = file,
+                    path = path,
+                    timestamp = timestamp
+                })
+            end
+        end
+    end
+    
+    http.prepare_content("application/json")
+    http.write_json({ success = true, patches = patches })
+end
+
+function action_patch_run()
+    local http = require "luci.http"
+    local util = require "luci.util"
+    local fs = require "nixio.fs"
+    
+    local patch_name = http.formvalue("patch")
+    if not patch_name or not patch_name:match("patch") or not patch_name:match("%.sh$") then
+        http.status(400, "Bad Request")
+        http.write_json({ success = false, output = "Patch invalide" })
+        return
+    end
+    
+    local patch_path = "/root/scripts/" .. patch_name
+    if not fs.access(patch_path) then
+        http.status(404, "Not Found")
+        http.write_json({ success = false, output = "Patch non trouve" })
+        return
+    end
+    
+    fs.mkdir("/root/patches")
+    
+    local output = util.exec("sh " .. patch_path .. " 2>&1") or ""
+    local timestamp = os.date("%Y-%m-%d %H:%M:%S")
+    local log_file = "/root/patches/" .. patch_name .. ".log"
+    
+    local log_entry = "[" .. timestamp .. "] PATCH: " .. patch_name .. "\nOUTPUT:\n" .. output .. "\n---\n"
+    local f = io.open(log_file, "a")
+    if f then
+        f:write(log_entry)
+        f:close()
+    end
+    
+    http.prepare_content("application/json")
+    http.write_json({ success = true, output = output, timestamp = timestamp })
+end
+
+function action_patch_view()
+    local http = require "luci.http"
+    local fs = require "nixio.fs"
+    
+    local patch_name = http.formvalue("patch")
+    if not patch_name or not patch_name:match("patch") or not patch_name:match("%.sh$") then
+        http.status(400, "Bad Request")
+        http.write_json({ success = false, output = "Patch invalide" })
+        return
+    end
+    
+    local patch_path = "/root/scripts/" .. patch_name
+    if not fs.access(patch_path) then
+        http.status(404, "Not Found")
+        http.write_json({ success = false, output = "Patch non trouve" })
+        return
+    end
+    
+    local content = fs.readfile(patch_path) or ""
+    
+    http.prepare_content("application/json")
+    http.write_json({ success = true, content = content })
+end
+
+function action_patch_download()
+    local http = require "luci.http"
+    local fs = require "nixio.fs"
+    
+    local patch_name = http.formvalue("patch")
+    if not patch_name or not patch_name:match("patch") or not patch_name:match("%.sh$") then
+        http.status(400, "Bad Request")
+        return
+    end
+    
+    local patch_path = "/root/scripts/" .. patch_name
+    if not fs.access(patch_path) then
+        http.status(404, "Not Found")
+        return
+    end
+    
+    local content = fs.readfile(patch_path) or ""
+    
+    http.prepare_content("application/octet-stream")
+    http.header("Content-Disposition", "attachment; filename=" .. patch_name)
+    http.write(content)
+end
+
+function action_patch_logs()
+    local http = require "luci.http"
+    local fs = require "nixio.fs"
+    
+    local patch_name = http.formvalue("patch")
+    if not patch_name or not patch_name:match("patch") or not patch_name:match("%.sh$") then
+        http.status(400, "Bad Request")
+        http.write_json({ success = false, output = "Patch invalide" })
+        return
+    end
+    
+    local log_file = "/root/patches/" .. patch_name .. ".log"
+    local logs = ""
+    
+    if fs.access(log_file) then
+        logs = fs.readfile(log_file) or ""
+    end
+    
+    http.prepare_content("application/json")
+    http.write_json({ success = true, logs = logs })
+end
+
+function action_patch_upload()
+    local http = require "luci.http"
+    local fs = require "nixio.fs"
+    
+    local file = http.formvalue("file")
+    local filename = http.formvalue("filename")
+    
+    if not file or not filename then
+        http.status(400, "Bad Request")
+        http.write_json({ success = false, output = "Fichier ou nom manquant" })
+        return
+    end
+    
+    if not filename:match("patch") or not filename:match("%.sh$") then
+        http.status(400, "Bad Request")
+        http.write_json({ success = false, output = "Nom invalide (doit contenir 'patch' et finir par .sh)" })
+        return
+    end
+    
+    if filename:match("%.%.") or filename:match("/") then
+        http.status(400, "Bad Request")
+        http.write_json({ success = false, output = "Nom avec chemin non autorise" })
+        return
+    end
+    
+    fs.mkdir("/root/scripts")
+    
+    local patch_path = "/root/scripts/" .. filename
+    local f = io.open(patch_path, "w")
+    if not f then
+        http.status(500, "Error")
+        http.write_json({ success = false, output = "Impossible d'ecrire le fichier" })
+        return
+    end
+    
+    f:write(file)
+    f:close()
+    
+    fs.chmod(patch_path, "755")
+    
+    http.prepare_content("application/json")
+    http.write_json({ success = true, output = "Patch " .. filename .. " uploaded" })
 end

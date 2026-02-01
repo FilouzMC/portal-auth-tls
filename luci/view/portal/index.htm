@@ -42,6 +42,57 @@ BASE_URL, PORTAL_USER, PORTAL_PASS, etc.
 </div>
 </div>
 
+<div class="cbi-section">
+<h3>Patches</h3>
+<button class="btn cbi-button" onclick="load_patches()">Rafraichir</button>
+</div>
+
+<div class="cbi-section">
+<h3>Upload Patch</h3>
+<div id="upload-area" style="border:2px dashed #999;border-radius:5px;padding:20px;text-align:center;background:#f9f9f9;cursor:pointer" ondrop="handle_drop(event)" ondragover="handle_dragover(event)" ondragleave="handle_dragleave(event)">
+<input type="file" id="upload-input" style="display:none" accept=".sh" onchange="handle_file_select(event)">
+<p style="margin:0;color:#666">Glissez-deposez un fichier .sh (contenant 'patch') ou cliquez</p>
+<p style="margin:5px 0 0 0;font-size:12px;color:#999" id="upload-hint">Nom doit contenir 'patch' et finir par .sh</p>
+</div>
+<div id="upload-status" style="margin-top:10px;display:none">
+<textarea id="upload-status-text" style="width:100%;height:100px;font-family:monospace;font-size:11px;border:1px solid #ccc;padding:5px" readonly></textarea>
+</div>
+</div>
+
+<div id="patches-list-section" style="margin-top:10px;display:none">
+<table id="patches-table" style="width:100%;border-collapse:collapse">
+<thead>
+<tr style="border-bottom:1px solid #ccc">
+<th style="text-align:left;padding:5px">Patch</th>
+<th style="text-align:center;width:100px">Action</th>
+</tr>
+</thead>
+<tbody id="patches-tbody">
+</tbody>
+</table>
+</div>
+
+<div id="patch-run-section" style="margin-top:15px;display:none">
+<h4>Resultat du patch</h4>
+<textarea id="patch-run-text" style="width:100%;height:150px;font-family:monospace;font-size:11px;border:1px solid #ccc;padding:5px" readonly></textarea>
+</div>
+
+<div id="patch-view-section" style="margin-top:15px;display:none">
+<h4>Code du patch</h4>
+<textarea id="patch-view-text" style="width:100%;height:200px;font-family:monospace;font-size:10px;border:1px solid #ccc;padding:5px" readonly></textarea>
+<div style="margin-top:10px">
+<button class="btn cbi-button" onclick="patch_download_file()" style="margin-right:5px">Telecharger</button>
+<button class="btn cbi-button" onclick="patch_view_logs()" style="margin-right:5px">Voir logs</button>
+<button class="btn cbi-button" onclick="patch_close_view()">Fermer</button>
+</div>
+</div>
+
+<div id="patch-logs-section" style="margin-top:15px;display:none">
+<h4>Historique du patch</h4>
+<textarea id="patch-logs-text" style="width:100%;height:250px;font-family:monospace;font-size:10px;border:1px solid #ccc;padding:5px" readonly></textarea>
+<button class="btn cbi-button" onclick="patch_close_logs()" style="margin-top:10px">Fermer</button>
+</div>
+
 </div>
 
 <script type="text/javascript">
@@ -144,6 +195,226 @@ function save_config() {
 
 window.addEventListener('load', function() {
   load_status();
+  load_patches();
 });
+
+var current_patch_name = null;
+
+function handle_dragover(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  e.currentTarget.style.background = '#e8f5e9';
+}
+
+function handle_dragleave(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  e.currentTarget.style.background = '#f9f9f9';
+}
+
+function handle_drop(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  e.currentTarget.style.background = '#f9f9f9';
+  
+  var files = e.dataTransfer.files;
+  if (files.length > 0) {
+    handle_file_select({ target: { files: files } });
+  }
+}
+
+function upload_click() {
+  document.getElementById('upload-input').click();
+}
+
+document.getElementById('upload-area').addEventListener('click', upload_click);
+
+function handle_file_select(e) {
+  var files = e.target.files;
+  if (files.length === 0) return;
+  
+  var file = files[0];
+  var filename = file.name;
+  
+  if (!filename.match(/patch/) || !filename.match(/\.sh$/)) {
+    alert('Nom invalide: doit contenir "patch" et finir par .sh');
+    return;
+  }
+  
+  var ta = document.getElementById('upload-status-text');
+  var sec = document.getElementById('upload-status');
+  if (!ta || !sec) return;
+  
+  ta.value = 'Upload de ' + filename + ' en cours...';
+  sec.style.display = 'block';
+  
+  var reader = new FileReader();
+  reader.onload = function(event) {
+    var content = event.target.result;
+    
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '<%=url("admin/services/portal/patch_upload")%>', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    
+    xhr.onload = function() {
+      if (xhr.status === 200) {
+        try {
+          var resp = JSON.parse(xhr.responseText);
+          ta.value = resp.success ? ('[OK] ' + resp.output) : ('[FAIL] ' + resp.output);
+          if (resp.success) {
+            setTimeout(function() { load_patches(); }, 500);
+          }
+        } catch (e) {
+          ta.value = 'Erreur parse: ' + e;
+        }
+      } else {
+        ta.value = 'HTTP ' + xhr.status;
+      }
+    };
+    
+    var data = 'filename=' + encodeURIComponent(filename) + '&file=' + encodeURIComponent(content);
+    xhr.send(data);
+  };
+  
+  reader.readAsText(file);
+}
+
+
+function load_patches() {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '<%=url("admin/services/portal/patches_list")%>', true);
+  xhr.onload = function() {
+    if (xhr.status === 200) {
+      try {
+        var resp = JSON.parse(xhr.responseText);
+        if (resp.success && resp.patches) {
+          var tbody = document.getElementById('patches-tbody');
+          var sec = document.getElementById('patches-list-section');
+          if (tbody && sec) {
+            tbody.innerHTML = '';
+            if (resp.patches.length === 0) {
+              tbody.innerHTML = '<tr><td colspan="2" style="padding:10px;color:#999">Aucun patch trouve</td></tr>';
+            } else {
+              for (var i = 0; i < resp.patches.length; i++) {
+                var p = resp.patches[i];
+                var row = '<tr style="border-bottom:1px solid #ddd"><td style="padding:8px">' + p.name + '</td>';
+                row += '<td style="text-align:center"><button class="btn cbi-button cbi-button-apply" onclick="patch_run_action(\'' + p.name + '\')" style="padding:3px 8px;font-size:11px">RUN</button> ';
+                row += '<button class="btn cbi-button" onclick="patch_view_code(\'' + p.name + '\')" style="padding:3px 8px;font-size:11px">VIEW</button></td></tr>';
+                tbody.innerHTML += row;
+              }
+            }
+            sec.style.display = 'block';
+          }
+        }
+      } catch (e) {
+        alert('Erreur chargement patches: ' + e);
+      }
+    }
+  };
+  xhr.send();
+}
+
+function patch_run_action(name) {
+  var ta = document.getElementById('patch-run-text');
+  var sec = document.getElementById('patch-run-section');
+  if (!ta || !sec) return;
+  
+  ta.value = 'Execution du patch ' + name + ' en cours...';
+  sec.style.display = 'block';
+  
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', '<%=url("admin/services/portal/patch_run")%>', true);
+  xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+  xhr.onload = function() {
+    if (xhr.status === 200) {
+      try {
+        var resp = JSON.parse(xhr.responseText);
+        ta.value = '[' + resp.timestamp + ']\n' + (resp.success ? '[OK]' : '[FAIL]') + '\n' + (resp.output || '');
+      } catch (e) {
+        ta.value = 'Erreur: ' + e.toString();
+      }
+    } else {
+      ta.value = 'HTTP ' + xhr.status;
+    }
+  };
+  xhr.send('patch=' + encodeURIComponent(name));
+}
+
+function patch_view_code(name) {
+  current_patch_name = name;
+  var ta = document.getElementById('patch-view-text');
+  var sec = document.getElementById('patch-view-section');
+  if (!ta || !sec) return;
+  
+  ta.value = 'Chargement du code...';
+  
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '<%=url("admin/services/portal/patch_view")%>?patch=' + encodeURIComponent(name), true);
+  xhr.onload = function() {
+    if (xhr.status === 200) {
+      try {
+        var resp = JSON.parse(xhr.responseText);
+        ta.value = resp.success ? (resp.content || '') : 'Erreur: ' + resp.output;
+        sec.style.display = 'block';
+      } catch (e) {
+        ta.value = 'Erreur parse: ' + e;
+        sec.style.display = 'block';
+      }
+    } else {
+      ta.value = 'HTTP ' + xhr.status;
+      sec.style.display = 'block';
+    }
+  };
+  xhr.send();
+}
+
+function patch_download_file() {
+  if (!current_patch_name) {
+    alert('Aucun patch selectionne');
+    return;
+  }
+  window.location = '<%=url("admin/services/portal/patch_download")%>?patch=' + encodeURIComponent(current_patch_name);
+}
+
+function patch_view_logs() {
+  if (!current_patch_name) {
+    alert('Aucun patch selectionne');
+    return;
+  }
+  
+  var ta = document.getElementById('patch-logs-text');
+  var sec = document.getElementById('patch-logs-section');
+  if (!ta || !sec) return;
+  
+  ta.value = 'Chargement des logs...';
+  
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '<%=url("admin/services/portal/patch_logs")%>?patch=' + encodeURIComponent(current_patch_name), true);
+  xhr.onload = function() {
+    if (xhr.status === 200) {
+      try {
+        var resp = JSON.parse(xhr.responseText);
+        ta.value = resp.success ? (resp.logs || 'Pas de logs') : 'Erreur: ' + resp.output;
+        sec.style.display = 'block';
+      } catch (e) {
+        ta.value = 'Erreur parse: ' + e;
+        sec.style.display = 'block';
+      }
+    } else {
+      ta.value = 'HTTP ' + xhr.status;
+      sec.style.display = 'block';
+    }
+  };
+  xhr.send();
+}
+
+function patch_close_view() {
+  document.getElementById('patch-view-section').style.display = 'none';
+  current_patch_name = null;
+}
+
+function patch_close_logs() {
+  document.getElementById('patch-logs-section').style.display = 'none';
+}
 </script>
 <%+footer%>
