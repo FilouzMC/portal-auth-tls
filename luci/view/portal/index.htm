@@ -1,96 +1,48 @@
 <%+header%>
-
 <div class="cbi-map">
-  <h2>Portail Captif - Actions rapides</h2>
-  <p>Exécutez les scripts sans utiliser SSH.</p>
-
-  <div class="cbi-section">
-    <button class="btn cbi-button cbi-button-apply" onclick="portalRunScript('auth', this)">Script d'authentification</button>
-    <button class="btn cbi-button cbi-button-reset" onclick="portalRunScript('logout', this)">Script de déconnexion</button>
-    <button class="btn cbi-button" onclick="portalRunScript('update', this)">Vérifier les mises à jour</button>
-  </div>
-
-  <div id="portal-output-box" class="cbi-section hidden">
-    <label>Résultat :</label>
-    <textarea id="portal-output" style="width:100%;height:220px" readonly></textarea>
-  </div>
+<h2>Portail Captif</h2>
+<p>Exécutez les scripts directement.</p>
+<div class="cbi-section">
+<button class="btn cbi-button" onclick="portal_run('auth')">Auth</button>
+<button class="btn cbi-button" onclick="portal_run('logout')">Logout</button>
+<button class="btn cbi-button" onclick="portal_run('update')">Update</button>
 </div>
-
+<div id="portal_output_area" style="margin-top:15px;display:none;">
+<textarea id="portal_output_text" style="width:100%;height:250px;font-family:monospace;font-size:12px" readonly></textarea>
+</div>
+</div>
 <script type="text/javascript">
-(function() {
-  function enableButtons(state) {
-    var buttons = document.querySelectorAll('.cbi-section button');
-    for (var i = 0; i < buttons.length; i++) {
-      buttons[i].disabled = !state;
-    }
-  }
-
-  function appendLine(textarea, text) {
-    if (textarea.value.length > 0) {
-      textarea.value += String.fromCharCode(10);
-    }
-    textarea.value += text;
-  }
-
-  window.portalRunScript = function(name, button) {
-    var outputBox = document.getElementById('portal-output-box');
-    var textarea = document.getElementById('portal-output');
-    if (!textarea || !outputBox) {
-      return;
-    }
-
-    outputBox.classList.remove('hidden');
-    textarea.value = '';
-    appendLine(textarea, 'Exécution du script "' + name + '" en cours...');
-
-    enableButtons(false);
-    var previousLabel = button.innerHTML;
-    button.innerHTML = 'Exécution...';
-
-    var xhr = new XMLHttpRequest();
-  xhr.open('POST', "<%=url(\"admin/system/portal/run\")%>", true);
-    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-
-    xhr.onreadystatechange = function() {
-      if (xhr.readyState !== 4) {
-        return;
+function portal_run(script_name) {
+  var ta = document.getElementById('portal_output_text');
+  var area = document.getElementById('portal_output_area');
+  if (!ta || !area) return;
+  
+  ta.value = 'Execution de ' + script_name + ' en cours...';
+  area.style.display = 'block';
+  
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', '<%=url("admin/system/portal/run")%>', true);
+  xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+  
+  xhr.onload = function() {
+    if (xhr.status === 200) {
+      try {
+        var response = JSON.parse(xhr.responseText);
+        ta.value = 'Status: ' + (response.success ? 'OK' : 'FAIL') + '\n';
+        ta.value += response.output;
+      } catch (e) {
+        ta.value = 'Erreur parse JSON: ' + e.toString();
       }
-
-      enableButtons(true);
-      button.innerHTML = previousLabel;
-
-      if (xhr.status === 200) {
-        var json;
-        try {
-          json = JSON.parse(xhr.responseText);
-        } catch (err) {
-          appendLine(textarea, 'Réponse illisible : ' + err);
-          return;
-        }
-
-        if (json.success) {
-          appendLine(textarea, 'Script terminé avec succès.');
-          if (json.output) {
-            appendLine(textarea, '--- Sortie ---');
-            appendLine(textarea, json.output);
-          }
-        } else {
-          appendLine(textarea, 'Erreur : ' + (json.output || 'inconnue'));
-        }
-      } else {
-        appendLine(textarea, 'Erreur HTTP ' + xhr.status);
-      }
-    };
-
-    xhr.onerror = function() {
-      enableButtons(true);
-      button.innerHTML = previousLabel;
-  appendLine(textarea, "Erreur réseau pendant l'appel AJAX.");
-    };
-
-    xhr.send('script=' + encodeURIComponent(name));
+    } else {
+      ta.value = 'HTTP Error ' + xhr.status;
+    }
   };
-})();
+  
+  xhr.onerror = function() {
+    ta.value = 'Erreur reseau';
+  };
+  
+  xhr.send('script=' + encodeURIComponent(script_name));
+}
 </script>
-
 <%+footer%>
