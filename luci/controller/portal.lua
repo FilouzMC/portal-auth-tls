@@ -350,6 +350,7 @@ end
 function action_paste_logs()
     local http = require "luci.http"
     local util = require "luci.util"
+    local fs = require "nixio.fs"
     
     local logs = util.exec("logread 2>/dev/null") or ""
     
@@ -357,11 +358,25 @@ function action_paste_logs()
         logs = "Aucun log systeme trouve."
     end
     
+    -- Write logs to temp file
+    local tmpfile = "/tmp/portal_logs_" .. os.time() .. ".txt"
+    local f = io.open(tmpfile, "w")
+    if not f then
+        http.prepare_content("application/json")
+        http.write_json({ success = false, output = "Erreur creation fichier temp", url = "" })
+        return
+    end
+    f:write(logs)
+    f:close()
+    
+    -- Send to paste.rs
     local paste_service = "https://paste.rs"
+    local output = util.exec("curl -s -X POST --data-binary @" .. tmpfile .. " " .. paste_service) or ""
     
-    local output = util.exec("echo '" .. logs:gsub("'", "'\\''") .. "' | curl -s -X POST -d @- " .. paste_service) or ""
+    -- Clean up
+    os.execute("rm -f " .. tmpfile)
     
-    if output == "" or output:match("error") then
+    if output == "" or output:match("error") or output:match("Error") then
         http.prepare_content("application/json")
         http.write_json({ success = false, output = "Erreur lors de l'envoi au service de paste", url = "" })
         return
