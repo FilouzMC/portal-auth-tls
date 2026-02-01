@@ -14,7 +14,7 @@ PORTAL_PASS=""              # Votre mot de passe
 # ========================================
 # URL DU PORTAIL
 # ========================================
-BASE_URL="https://exemple.com:8090"
+BASE_URL="https://exemple.com:8090"   # URL du portail captif (sans le / à la fin)
 
 # ========================================
 # ALERTES DISCORD (optionnel)

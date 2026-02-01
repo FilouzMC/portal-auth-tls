@@ -17,6 +17,7 @@ function index()
     entry({"admin", "services", "portal", "patch_download"}, call("action_patch_download"), nil).leaf = true
     entry({"admin", "services", "portal", "patch_logs"}, call("action_patch_logs"), nil).leaf = true
     entry({"admin", "services", "portal", "patch_upload"}, call("action_patch_upload"), nil).leaf = true
+    entry({"admin", "services", "portal", "patch_delete"}, call("action_patch_delete"), nil).leaf = true
 end
 
 function action_index()
@@ -290,4 +291,42 @@ function action_patch_upload()
     
     http.prepare_content("application/json")
     http.write_json({ success = true, output = "Patch " .. filename .. " uploaded" })
+end
+
+function action_patch_delete()
+    local http = require "luci.http"
+    local fs = require "nixio.fs"
+    
+    local patch_name = http.formvalue("patch")
+    if not patch_name or not patch_name:match("patch") or not patch_name:match("%.sh$") then
+        http.status(400, "Bad Request")
+        http.write_json({ success = false, output = "Patch invalide" })
+        return
+    end
+    
+    if patch_name:match("%.%.") or patch_name:match("/") then
+        http.status(400, "Bad Request")
+        http.write_json({ success = false, output = "Nom avec chemin non autorise" })
+        return
+    end
+    
+    local patch_path = "/root/scripts/" .. patch_name
+    if not fs.access(patch_path) then
+        http.status(404, "Not Found")
+        http.write_json({ success = false, output = "Patch non trouve" })
+        return
+    end
+    
+    local ok = fs.remove(patch_path)
+    if not ok then
+        http.status(500, "Error")
+        http.write_json({ success = false, output = "Impossible de supprimer le fichier" })
+        return
+    end
+    
+    local log_file = "/root/patches/" .. patch_name .. ".log"
+    fs.remove(log_file)
+    
+    http.prepare_content("application/json")
+    http.write_json({ success = true, output = "Patch " .. patch_name .. " supprime" })
 end

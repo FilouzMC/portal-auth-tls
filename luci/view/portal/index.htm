@@ -299,7 +299,8 @@ function load_patches() {
                 var p = resp.patches[i];
                 var row = '<tr style="border-bottom:1px solid #ddd"><td style="padding:8px">' + p.name + '</td>';
                 row += '<td style="text-align:center"><button class="btn cbi-button cbi-button-apply" onclick="patch_run_action(\'' + p.name + '\')" style="padding:3px 8px;font-size:11px">RUN</button> ';
-                row += '<button class="btn cbi-button" onclick="patch_view_code(\'' + p.name + '\')" style="padding:3px 8px;font-size:11px">VIEW</button></td></tr>';
+                row += '<button class="btn cbi-button" onclick="patch_view_code(\'' + p.name + '\')" style="padding:3px 8px;font-size:11px">VIEW</button> ';
+                row += '<button class="btn cbi-button cbi-button-reset" onclick="patch_delete_confirm(\'' + p.name + '\')" style="padding:3px 8px;font-size:11px">DEL</button></td></tr>';
                 tbody.innerHTML += row;
               }
             }
@@ -415,6 +416,35 @@ function patch_close_view() {
 
 function patch_close_logs() {
   document.getElementById('patch-logs-section').style.display = 'none';
+}
+
+function patch_delete_confirm(name) {
+  if (!confirm('Etes-vous sur de vouloir supprimer ' + name + ' ?\nLe fichier et son historique seront effaces mais pas les actions du patch sur votre systeme.')) {
+    return;
+  }
+  patch_delete(name);
+}
+
+function patch_delete(name) {
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', '<%=url("admin/services/portal/patch_delete")%>', true);
+  xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+  xhr.onload = function() {
+    if (xhr.status === 200) {
+      try {
+        var resp = JSON.parse(xhr.responseText);
+        alert(resp.success ? 'Supprime' : 'Erreur: ' + resp.output);
+        if (resp.success) {
+          load_patches();
+        }
+      } catch (e) {
+        alert('Erreur parse: ' + e);
+      }
+    } else {
+      alert('HTTP ' + xhr.status);
+    }
+  };
+  xhr.send('patch=' + encodeURIComponent(name));
 }
 </script>
 <%+footer%>
