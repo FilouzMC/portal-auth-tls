@@ -156,17 +156,34 @@ log "Cron configuré : @reboot, auth.sh (1 min) et check_update.sh (30 min)"
 # ========================================
 # ÉTAPE 7 : INSTALLATION INTERFACE LUCI
 # ========================================
-LUCI_INSTALLER="$SRC_ROOT/install_luci.sh"
-if [ -f "$LUCI_INSTALLER" ]; then
+LUCI_CONTROLLER_SRC="$SRC_ROOT/luci/controller/portal.lua"
+LUCI_VIEW_SRC="$SRC_ROOT/luci/view/portal/index.htm"
+LUCI_CONTROLLER_DST="/usr/lib/lua/luci/controller"
+LUCI_VIEW_DST="/usr/lib/lua/luci/view/portal"
+
+if [ -f "$LUCI_CONTROLLER_SRC" ] && [ -f "$LUCI_VIEW_SRC" ]; then
     log "Installation de l'interface LuCI..."
-    chmod +x "$LUCI_INSTALLER"
-    if sh "$LUCI_INSTALLER" "$SRC_ROOT"; then
-        log "Interface LuCI installée avec succès."
-    else
-        log "⚠️  Échec de l'installation LuCI (non bloquant)."
+
+    if [ ! -d "/usr/lib/lua/luci" ]; then
+        log "LuCI non détecté, installation des paquets nécessaires..."
+        opkg update
+        opkg install luci-base luci-mod-admin-full
     fi
+
+    mkdir -p "$LUCI_CONTROLLER_DST" "$LUCI_VIEW_DST"
+    cp "$LUCI_CONTROLLER_SRC" "$LUCI_CONTROLLER_DST/portal.lua"
+    cp "$LUCI_VIEW_SRC" "$LUCI_VIEW_DST/"
+    chmod 644 "$LUCI_CONTROLLER_DST/portal.lua" "$LUCI_VIEW_DST/index.htm"
+
+    rm -rf /tmp/luci-indexcache /tmp/luci-modulecache 2>/dev/null || true
+
+    if /etc/init.d/uhttpd status >/dev/null 2>&1; then
+        /etc/init.d/uhttpd restart >/dev/null 2>&1 || true
+    fi
+
+    log "Interface LuCI installée (Système > Portail Captif)."
 else
-    log "Installeur LuCI introuvable, étape ignorée."
+    log "Sources LuCI introuvables, étape ignorée."
 fi
 
 # ========================================
