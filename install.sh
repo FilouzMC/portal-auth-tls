@@ -167,7 +167,7 @@ if [ -f "$LUCI_CONTROLLER_SRC" ] && [ -f "$LUCI_VIEW_SRC" ]; then
     if [ ! -d "/usr/lib/lua/luci" ]; then
         log "LuCI non détecté, installation des paquets nécessaires..."
         opkg update
-        opkg install luci-base luci-mod-admin-full
+        opkg install luci-base luci-mod-admin-full luci-lib-nixio luci-lib-ipkg lua liblua luci-compat
     fi
 
     mkdir -p "$LUCI_CONTROLLER_DST" "$LUCI_VIEW_DST"
