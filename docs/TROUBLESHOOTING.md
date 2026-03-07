@@ -2,6 +2,8 @@
 
 Guide complet pour résoudre les problèmes courants.
 
+> ℹ️ **Gestionnaire de paquets** : Les versions récentes d'OpenWrt (24.10+) utilisent `apk` à la place de `opkg`. Les commandes de ce guide indiquent en priorité `apk`, puis une alternative `opkg` pour les anciennes versions ou en cas d'indisponibilité.
+
 ## Le script ne fonctionne pas
 
 ### Vérification 1 : Configuration existe
@@ -50,7 +52,10 @@ sh -x /root/scripts/auth.sh
 ```bash
 curl --version
 
-# Si absent
+# Si absent (OpenWrt 24.10+)
+apk update && apk add curl
+
+# Si apk n'est pas disponible
 opkg update && opkg install curl
 ```
 
@@ -155,10 +160,16 @@ curl -u utilisateur:motdepasse https://votre-portail.com:8090
 ### Vérifier l'installation LuCI
 
 ```bash
-# LuCI installé ?
+# LuCI installé ? (OpenWrt 24.10+)
+apk info | grep luci
+
+# Anciennes versions
 opkg list-installed | grep luci
 
 # Réinstaller
+apk add luci-base luci-mod-admin-full
+
+# Si apk indisponible
 opkg install luci-base luci-mod-admin-full
 
 # Redémarrer uhttpd

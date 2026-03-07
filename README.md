@@ -38,6 +38,8 @@ Le script d'installation va :
 - ✅ Configurer les tâches cron automatiques
 - ✅ Installer l'interface LuCI web
 
+> ℹ️ Les versions récentes d'OpenWrt utilisent `apk` comme gestionnaire de paquets. Le script détecte automatiquement `apk` et bascule sur `opkg` si nécessaire.
+
 **Note** : Après l'installation, éditez `/root/scripts/portal_config.sh` avec vos identifiants.
 
 ## 🌐 Interfaces

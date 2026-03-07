@@ -45,6 +45,67 @@ cleanup() {
 trap cleanup EXIT
 
 # ========================================
+# GESTIONNAIRES DE PAQUETS (apk / opkg)
+# ========================================
+HAS_APK=0
+HAS_OPKG=0
+
+if command -v apk >/dev/null 2>&1; then
+    HAS_APK=1
+fi
+
+if command -v opkg >/dev/null 2>&1; then
+    HAS_OPKG=1
+fi
+
+if [ "$HAS_APK" -eq 0 ] && [ "$HAS_OPKG" -eq 0 ]; then
+    log "ERREUR : Aucun gestionnaire de paquets (apk ni opkg) n'a été trouvé."
+    exit 1
+fi
+
+pkg_update() {
+    if [ "$HAS_APK" -eq 1 ]; then
+        log "Mise à jour des dépôts (apk update)..."
+        if apk update >/dev/null 2>&1; then
+            return 0
+        else
+            log "apk update a échoué, tentative via opkg..."
+        fi
+    fi
+
+    if [ "$HAS_OPKG" -eq 1 ]; then
+        log "Mise à jour des dépôts (opkg update)..."
+        opkg update
+        return $?
+    fi
+
+    return 1
+}
+
+pkg_install() {
+    if [ $# -eq 0 ]; then
+        return 0
+    fi
+
+    if [ "$HAS_APK" -eq 1 ]; then
+        log "Installation des paquets (apk add $*)..."
+        if apk add "$@" >/dev/null 2>&1; then
+            return 0
+        else
+            log "apk add a échoué, tentative via opkg..."
+        fi
+    fi
+
+    if [ "$HAS_OPKG" -eq 1 ]; then
+        log "Installation des paquets (opkg install $*)..."
+        opkg install "$@"
+        return $?
+    fi
+
+    return 1
+}
+
+# ========================================
 # ÉTAPE 1 : TÉLÉCHARGEMENT DE L'ARCHIVE
 # ========================================
 rm -rf "$WORK_DIR"
@@ -52,11 +113,14 @@ mkdir -p "$WORK_DIR"
 
 # Vérifier et installer curl si nécessaire
 if ! command -v curl >/dev/null 2>&1; then
-    log "curl non trouvé, installation via opkg..."
-    opkg update
-    opkg install curl
-    if ! command -v curl >/dev/null 2>&1; then
+    log "curl non trouvé, tentative d'installation (apk/opkg)..."
+    if ! pkg_update || ! pkg_install curl; then
         log "ERREUR : Impossible d'installer curl"
+        exit 1
+    fi
+
+    if ! command -v curl >/dev/null 2>&1; then
+        log "ERREUR : curl reste introuvable après installation"
         exit 1
     fi
     log "curl installé avec succès"
@@ -166,8 +230,8 @@ if [ -f "$LUCI_CONTROLLER_SRC" ] && [ -f "$LUCI_VIEW_SRC" ]; then
 
     if [ ! -d "/usr/lib/lua/luci" ]; then
         log "LuCI non détecté, installation des paquets nécessaires..."
-        opkg update
-        opkg install luci-base luci-mod-admin-full luci-lib-nixio luci-lib-ipkg lua liblua luci-compat
+        pkg_update
+        pkg_install luci-base luci-mod-admin-full luci-lib-nixio luci-lib-ipkg lua liblua luci-compat
     fi
 
     mkdir -p "$LUCI_CONTROLLER_DST" "$LUCI_VIEW_DST"
