@@ -32,7 +32,7 @@ set_status() {
 echo "Déconnexion du portail en cours..."
 
 LOGOUT_BODY="mode=193&username=$PORTAL_USER&a=$TIMESTAMP&producttype=0"
-LOGOUT_RESP="$(curl -s -X POST -d "$LOGOUT_BODY" "$BASE_URL/logout.xml")"
+LOGOUT_RESP="$(curl -k -s -X POST -d "$LOGOUT_BODY" "$BASE_URL/logout.xml")"
 
 if echo "$LOGOUT_RESP" | grep -q "LOGIN"; then
     echo "✅ Déconnecté avec succès."

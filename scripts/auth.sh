@@ -52,7 +52,7 @@ if ping -c 1 -W 2 8.8.8.8 >/dev/null 2>&1; then
     # Internet OK -> KeepAlive
     LIVE_URL="$BASE_URL/live?mode=192&username=$PORTAL_USER&a=$TIMESTAMP&producttype=0"
 
-    curl -s "$LIVE_URL" >/dev/null 2>&1
+    curl -k -s "$LIVE_URL" >/dev/null 2>&1
 
     echo "ONLINE" > "$STATE_FILE"
     set_status "OK" "Internet OK, KeepAlive envoyé (v$PORTAL_AUTH_VERSION)."
@@ -66,7 +66,7 @@ fi
 # ===========================
 #  ÉTAPE 2 : PORTAIL JOIGNABLE ?
 # ===========================
-if ! curl -s --max-time 5 "$BASE_URL" >/dev/null 2>&1; then
+if ! curl -k -s --max-time 5 "$BASE_URL" >/dev/null 2>&1; then
     log "Impossible d'atteindre le portail : $BASE_URL"
     set_status "ERROR" "Portail injoignable ($BASE_URL)."
 
@@ -82,7 +82,7 @@ fi
 #  ÉTAPE 3 : CONNEXION (mode=191)
 # ===========================
 LOGIN_BODY="mode=191&username=$PORTAL_USER&password=$PORTAL_PASS&a=$TIMESTAMP&producttype=0"
-LOGIN_RESP="$(curl -s -X POST -d "$LOGIN_BODY" "$BASE_URL/login.xml")"
+LOGIN_RESP="$(curl -k -s -X POST -d "$LOGIN_BODY" "$BASE_URL/login.xml")"
 
 log "Réponse login brute : $LOGIN_RESP"
 
